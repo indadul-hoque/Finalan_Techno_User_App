@@ -1,0 +1,20 @@
+{
+  "buildFiles": [
+    "/Users/umangdonda/Flutter/Flutter Install/Flutter 3.29.0/flutter/packages/flutter_tools/gradle/src/main/groovy/CMakeLists.txt"
+  ],
+  "cleanCommandsComponents": [
+    [
+      "/Users/umangdonda/Library/Android/sdk/cmake/3.22.1/bin/ninja",
+      "-C",
+      "/Users/umangdonda/Downloads/1 FL Banking App/New/fl_banking_app/android/app/.cxx/Debug/11312v5t/armeabi-v7a",
+      "clean"
+    ]
+  ],
+  "buildTargetsCommandComponents": [
+    "/Users/umangdonda/Library/Android/sdk/cmake/3.22.1/bin/ninja",
+    "-C",
+    "/Users/umangdonda/Downloads/1 FL Banking App/New/fl_banking_app/android/app/.cxx/Debug/11312v5t/armeabi-v7a",
+    "{LIST_OF_TARGETS_TO_BUILD}"
+  ],
+  "libraries": {}
+}

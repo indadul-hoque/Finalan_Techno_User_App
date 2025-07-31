@@ -1,0 +1,2 @@
+/Users/umangdonda/Downloads/1 FL Banking App/New/fl_banking_app/android/app/.cxx/Debug/11312v5t/x86_64/CMakeFiles/edit_cache.dir
+/Users/umangdonda/Downloads/1 FL Banking App/New/fl_banking_app/android/app/.cxx/Debug/11312v5t/x86_64/CMakeFiles/rebuild_cache.dir
