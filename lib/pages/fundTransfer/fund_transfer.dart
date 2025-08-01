@@ -48,7 +48,7 @@ class _FundTransferScreenState extends State<FundTransferScreen> {
     "Axis bank",
     "HDFC bank",
     "ICICI bank",
-    "Star bank"
+    "Finalan Techno"
   ];
 
   TextEditingController beneficiaryAccountController = TextEditingController();

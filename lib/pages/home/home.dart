@@ -346,7 +346,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               widthSpace,
               const Text(
-                "STAR BANK",
+                "Finalan Techno",
                 style: interSemibold20White,
               )
             ],

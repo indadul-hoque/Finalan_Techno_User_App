@@ -72,7 +72,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
           color: primaryColor,
         ),
         const Text(
-          "STAR BANK",
+          "Finalan Techno",
           style: interSemibold22Primary,
         )
       ],

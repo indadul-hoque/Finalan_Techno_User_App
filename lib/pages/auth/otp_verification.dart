@@ -151,7 +151,7 @@ class _OtpVerificationState extends State<OtpVerification> {
 
   title() {
     return const Text(
-      "STAR BANK",
+      "Finalan Techno",
       style: interSemibold22Primary,
       textAlign: TextAlign.center,
     );

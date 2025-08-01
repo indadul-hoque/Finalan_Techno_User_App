@@ -128,7 +128,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   title() {
     return const Text(
-      "STAR BANK",
+      "Finalan Techno",
       style: interSemibold22Primary,
       textAlign: TextAlign.center,
     );

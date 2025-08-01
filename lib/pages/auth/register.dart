@@ -121,7 +121,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   title() {
     return const Text(
-      "STAR BANK",
+      "Finalan Techno",
       style: interSemibold22Primary,
       textAlign: TextAlign.center,
     );

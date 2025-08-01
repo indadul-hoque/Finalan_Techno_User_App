@@ -73,7 +73,7 @@ class TermsAndConditionScreen extends StatelessWidget {
           color: primaryColor,
         ),
         const Text(
-          "STAR BANK",
+          "Finalan Techno",
           style: interSemibold22Primary,
         )
       ],

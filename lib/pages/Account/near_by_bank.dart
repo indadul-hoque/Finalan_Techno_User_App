@@ -18,7 +18,7 @@ class _NearByBankScreenState extends State<NearByBankScreen> {
   final bankList = [
     {
       "image": "assets/profile/image1.png",
-      "bankName": "Star Bank",
+      "bankName": "Finalan Techno",
       "adress": "2464 Royal Ln. Mesa, New Jersey 45463",
       "time": "20 min",
       "latLang": const LatLng(40.7440, -74.0324),
@@ -26,7 +26,7 @@ class _NearByBankScreenState extends State<NearByBankScreen> {
     },
     {
       "image": "assets/profile/image2.png",
-      "bankName": "Star Bank",
+      "bankName": "Finalan Techno",
       "adress": "1901 Thornridge Cir. Shiloh,Hawaii 81063",
       "time": "45 min",
       "latLang": const LatLng(40.7178, -74.0431),
@@ -34,7 +34,7 @@ class _NearByBankScreenState extends State<NearByBankScreen> {
     },
     {
       "image": "assets/profile/image3.png",
-      "bankName": "Star Bank",
+      "bankName": "Finalan Techno",
       "adress": "6391 Elgin St. Celina, Delaware 10299",
       "time": "45 min",
       "latLang": const LatLng(40.7368, -73.9845),
@@ -42,7 +42,7 @@ class _NearByBankScreenState extends State<NearByBankScreen> {
     },
     {
       "image": "assets/profile/image1.png",
-      "bankName": "Star Bank",
+      "bankName": "Finalan Techno",
       "adress": "2464 Royal Ln. Mesa, New Jersey 45463",
       "time": "20 min",
       "latLang": const LatLng(40.6580, -73.9941),
@@ -50,7 +50,7 @@ class _NearByBankScreenState extends State<NearByBankScreen> {
     },
     {
       "image": "assets/profile/image2.png",
-      "bankName": "Star Bank",
+      "bankName": "Finalan Techno",
       "adress": "1901 Thornridge Cir. Shiloh,Hawaii 81063",
       "time": "45 min",
       "latLang": const LatLng(40.6602, -73.9690),
@@ -58,7 +58,7 @@ class _NearByBankScreenState extends State<NearByBankScreen> {
     },
     {
       "image": "assets/profile/image3.png",
-      "bankName": "Star Bank",
+      "bankName": "Finalan Techno",
       "adress": "6391 Elgin St. Celina, Delaware 10299",
       "time": "45 min",
       "latLang": const LatLng(40.7305, -73.9515),
