@@ -33,7 +33,7 @@ class _SplashScreenState extends State<SplashScreen> {
               width: 70,
             ),
             height5Space,
-            const Text("STAR BANK", style: interSemibold25White)
+            const Text("Finalan Techno", style: interSemibold25White)
           ],
         ),
       ),
