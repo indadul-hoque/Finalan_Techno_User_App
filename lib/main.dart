@@ -123,21 +123,9 @@ class _MyAppState extends State<MyApp> {
           type: PageTransitionType.rightToLeft,
           settings: settings,
         );
-      case '/register':
-        return PageTransition(
-          child: const RegisterScreen(),
-          type: PageTransitionType.rightToLeft,
-          settings: settings,
-        );
       case '/otp':
         return PageTransition(
           child: const OtpVerification(),
-          type: PageTransitionType.rightToLeft,
-          settings: settings,
-        );
-      case '/enterpin':
-        return PageTransition(
-          child: const EnterPinScreen(),
           type: PageTransitionType.rightToLeft,
           settings: settings,
         );
