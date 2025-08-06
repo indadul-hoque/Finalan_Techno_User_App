@@ -206,49 +206,7 @@ class _MyAppState extends State<MyApp> {
           child: const EditProfile(),
           type: PageTransitionType.rightToLeft,
           settings: settings,
-        );
-      case '/changepin':
-        return PageTransition(
-          child: const ChangePinScreen(),
-          type: PageTransitionType.rightToLeft,
-          settings: settings,
-        );
-      case '/languages':
-        return PageTransition(
-          child: const LanguagesScreen(),
-          type: PageTransitionType.rightToLeft,
-          settings: settings,
-        );
-      case '/privacyPolicy':
-        return PageTransition(
-          child: const PrivacyPolicyScreen(),
-          type: PageTransitionType.rightToLeft,
-          settings: settings,
-        );
-      case '/termsAndCondition':
-        return PageTransition(
-          child: const TermsAndConditionScreen(),
-          type: PageTransitionType.rightToLeft,
-          settings: settings,
-        );
-      case '/customerSupport':
-        return PageTransition(
-          child: const CustomerSupportScreen(),
-          type: PageTransitionType.rightToLeft,
-          settings: settings,
-        );
-      case '/nearByBank':
-        return PageTransition(
-          child: const NearByBankScreen(),
-          type: PageTransitionType.rightToLeft,
-          settings: settings,
-        );
-      case '/nearByAtm':
-        return PageTransition(
-          child: const NearByATMScreen(),
-          type: PageTransitionType.rightToLeft,
-          settings: settings,
-        );
+        );        
       default:
         return null;
     }

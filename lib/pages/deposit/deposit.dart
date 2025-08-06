@@ -1,51 +1,35 @@
 import 'package:dotted_border/dotted_border.dart';
 import 'package:fl_banking_app/localization/localization_const.dart';
-import 'package:fl_banking_app/pages/Account/languages.dart';
-import 'package:fl_banking_app/theme/theme.dart';
 import 'package:fl_banking_app/widget/column_builder.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../theme/theme.dart';
 
 class DepositScreen extends StatefulWidget {
   const DepositScreen({Key? key}) : super(key: key);
-
   @override
   State<DepositScreen> createState() => _DepositScreenState();
 }
 
 class _DepositScreenState extends State<DepositScreen> {
-  final currentDepositList = [
+  final currentLoans = [
     {
-      "year": 2,
-      "date": "12 march 2022",
-      "amount": 500.00,
-      "accountNo": "1234 5678 9101",
-      "status": "Pending",
-      "rate": "2%",
+      "icon": "assets/loan/home-database.png",
+      "name": "SBI Bank",
+      "accountNo": "XXXX XXXX XXXX 1222",
+      "amount": 20000.00
     },
     {
-      "year": 3,
-      "date": "14 march 2022",
-      "amount": 900.00,
-      "accountNo": "1234 5678 9101",
-      "status": "Pending",
-      "rate": "2%",
-    },
-  ];
-
-  final completedDeposit = [
-    {
-      "year": 1,
-      "date": "10 march 2021",
-      "amount": 600.00,
-      "accountNo": "1234 5678 9101",
-      "status": "Completed",
-      "rate": "2%",
+      "icon": "assets/loan/car-outline.png",
+      "name": "HDFC Bank",
+      "accountNo": "XXXX XXXX XXXX 1222",
+      "amount": 10000.00
     },
   ];
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
@@ -65,211 +49,155 @@ class _DepositScreenState extends State<DepositScreen> {
             statusBarColor: Colors.transparent,
             statusBarIconBrightness: Brightness.light),
         title: Text(
-          getTranslation(context, 'deposit.deposit'),
+          getTranslation(context, 'Deposits'),
           style: bold20White,
         ),
       ),
       body: ListView(
-        padding: const EdgeInsets.only(
-          left: fixPadding * 2,
-          right: fixPadding * 2,
-          top: fixPadding * 2,
-          bottom: fixPadding * 7.5,
-        ),
         physics: const BouncingScrollPhysics(),
+        padding: EdgeInsets.zero,
         children: [
-          Text(
-            getTranslation(context, 'deposit.current_deposit'),
-            style: semibold16Black33,
-          ),
-          currentDepositeList(),
+          // Removed currentLoanTitle() to remove the heading
+          currentLoansListContent(),
           heightSpace,
-          Text(
-            getTranslation(context, 'deposit.completed_deposit'),
-            style: semibold16Black33,
+        ],
+      ),
+    );
+  }
+
+  currentLoansListContent() {
+    return ColumnBuilder(
+      itemBuilder: (context, index) {
+        return Container(
+          margin: const EdgeInsets.symmetric(
+              vertical: fixPadding, horizontal: fixPadding * 2),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10.0),
+            color: whiteColor,
+            boxShadow: [
+              BoxShadow(
+                color: blackColor.withValues(alpha: 0.25),
+                blurRadius: 6,
+              )
+            ],
           ),
-          completedDepositeList(),
-        ],
-      ),
-      floatingActionButton: addButton(context),
-    );
-  }
-
-  addButton(BuildContext context) {
-    return FloatingActionButton(
-      onPressed: () {
-        Navigator.pushNamed(context, '/addDeposit');
-      },
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(100.0),
-      ),
-      backgroundColor: primaryColor,
-      child: const Icon(
-        Icons.add,
-        color: whiteColor,
-        size: 30,
-      ),
-    );
-  }
-
-  completedDepositeList() {
-    return ColumnBuilder(
-      itemBuilder: (context, index) {
-        return listContent(index, completedDeposit, greenColor);
-      },
-      itemCount: completedDeposit.length,
-    );
-  }
-
-  currentDepositeList() {
-    return ColumnBuilder(
-      itemBuilder: (context, index) {
-        return listContent(index, currentDepositList, redColor);
-      },
-      itemCount: currentDepositList.length,
-    );
-  }
-
-  listContent(int index, List listname, Color statusTextColor) {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: fixPadding),
-      decoration: BoxDecoration(
-        color: whiteColor,
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: [
-          BoxShadow(
-            color: blackColor.withValues(alpha: 0.25),
-            blurRadius: 6,
-          )
-        ],
-      ),
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(
-                horizontal: fixPadding * 2, vertical: fixPadding),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                Container(
-                  height: 38,
-                  width: 38,
-                  padding: const EdgeInsets.all(fixPadding / 1.2),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(fixPadding * 1.5),
+                child: Row(
+                  children: [
+                    Container(
+                      height: 40,
+                      width: 40,
+                      padding: const EdgeInsets.all(fixPadding / 1.2),
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Color(0xFFEDEBEB),
+                      ),
+                      child: Image.asset(
+                        currentLoans[index]['icon'].toString(),
+                      ),
+                    ),
+                    widthSpace,
+                    width5Space,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            currentLoans[index]['name'].toString(),
+                            style: bold16Black33,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            currentLoans[index]['accountNo'].toString(),
+                            style: semibold14Grey94,
+                            overflow: TextOverflow.ellipsis,
+                          )
+                        ],
+                      ),
+                    ),
+                    Text(
+                      "\$${currentLoans[index]['amount']}",
+                      style: bold16Primary,
+                    )
+                  ],
+                ),
+              ),
+              dottedLine(),
+              // The entire Padding with period, rate, and EMI text labels has been removed
+              GestureDetector(
+                onTap: () {
+                  Navigator.pushNamed(context, '/depositStatement');
+                },
+                child: Container(
+                  width: double.maxFinite,
+                  padding: const EdgeInsets.symmetric(vertical: 7.0),
                   decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Color(0xFFEDEBEB),
-                  ),
-                  child: Image.asset(
-                    "assets/bottomNavigation/Glyph_ undefined.png",
-                    color: primaryColor,
-                  ),
-                ),
-                width5Space,
-                widthSpace,
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                          "${getTranslation(context, 'deposit.deposit_for')} ${listname[index]['year']} ${getTranslation(context, 'deposit.year')}",
-                          style: bold16Black33,
-                          overflow: TextOverflow.ellipsis),
-                      Text(
-                        listname[index]['date'].toString(),
-                        style: bold14Grey94,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-                Text(
-                  "\$${listname[index]['amount']}",
-                  style: bold18Black33,
-                )
-              ],
-            ),
-          ),
-          dottedLine(),
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: fixPadding * 2,
-              vertical: fixPadding * 1.5,
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  flex: 2,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "${getTranslation(context, 'deposit.deposit_to')}:",
-                        style: semibold14Grey94,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      Text(
-                        listname[index]['accountNo'].toString(),
-                        style: semibold15Black33,
-                        overflow: TextOverflow.ellipsis,
-                      )
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "${getTranslation(context, 'deposit.status')}:",
-                        style: semibold14Grey94,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      Text(
-                        listname[index]['status'].toString(),
-                        style: semibold15Red.copyWith(color: statusTextColor),
-                        overflow: TextOverflow.ellipsis,
-                      )
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: Align(
-                    alignment: selectedValue == 'عربى'
-                        ? Alignment.centerLeft
-                        : Alignment.centerRight,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "${getTranslation(context, 'deposit.rate')}:",
-                          style: semibold14Grey94,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        Text(
-                          "${listname[index]['rate']} ${getTranslation(context, 'deposit.rate_text')}",
-                          style: semibold15Black33,
-                          overflow: TextOverflow.ellipsis,
-                        )
-                      ],
+                    color: Color(0xFFE5C4C4),
+                    borderRadius: BorderRadius.vertical(
+                      bottom: Radius.circular(10.0),
                     ),
                   ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    getTranslation(context, 'View Deposit Statement'),
+                    style: bold16Primary,
+                  ),
                 ),
-              ],
-            ),
-          )
-        ],
-      ),
+              ),
+            ],
+          ),
+        );
+      },
+      itemCount: currentLoans.length,
+    );
+  }
+
+  infoWidget(String title, String detail) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: semibold14Grey94,
+          overflow: TextOverflow.ellipsis,
+        ),
+        Text(
+          detail,
+          style: semibold16Black33,
+          overflow: TextOverflow.ellipsis,
+        )
+      ],
     );
   }
 
   dottedLine() {
     return DottedBorder(
       padding: EdgeInsets.zero,
-      dashPattern: const [2, 3],
       color: primaryColor,
+      dashPattern: const [2, 3],
       child: Container(),
     );
   }
 }
+
+class ImageClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    Path path = Path();
+    path.moveTo(0, 0);
+    path.lineTo(0, size.height);
+    path.lineTo(size.width - 35, size.height);
+    path.lineTo(size.width, 0);
+    path.close();
+    return path;
+  }
+
+  @override
+  bool shouldReclip(covariant CustomClipper<Path> oldClipper) {
+    return false;
+  }
+}
+

@@ -52,7 +52,7 @@ class _HomeScreenState extends State<HomeScreen> {
       "routeName": "/educationLoan",
       "isDetail" : true
     }
-															
+
   ];
 
   final transectionlist = [
@@ -204,11 +204,11 @@ class _HomeScreenState extends State<HomeScreen> {
           right: fixPadding * 2,
           bottom: fixPadding,
           top: fixPadding),
-      crossAxisCount: 3,
-      childAspectRatio: (size.width) / (size.height / 2),
+      crossAxisCount: 2,
+      childAspectRatio: 0.75,
       shrinkWrap: true,
-      mainAxisSpacing: fixPadding * 2,
-      crossAxisSpacing: fixPadding * 2,
+      mainAxisSpacing: fixPadding * 3,
+      crossAxisSpacing: fixPadding * 3,
       children: [
         for (int i = 0; i < servicelist.length; i++)
           GestureDetector(
@@ -251,42 +251,10 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
-        GestureDetector(
-          onTap: () {
-            Navigator.pushNamed(context, '/services');
-          },
-          child: Container(
-            padding: const EdgeInsets.all(fixPadding),
-            decoration: BoxDecoration(
-              color: whiteColor,
-              borderRadius: BorderRadius.circular(10),
-              boxShadow: [
-                BoxShadow(
-                  color: blackColor.withValues(alpha: 0.25),
-                  blurRadius: 6,
-                )
-              ],
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Image.asset(
-                  "assets/home/more.png",
-                  height: 24,
-                  width: 24,
-                ),
-                Text(
-                  getTranslation(context, 'home.more'),
-                  style: bold15Grey94,
-                  overflow: TextOverflow.ellipsis,
-                )
-              ],
-            ),
-          ),
-        ),
       ],
     );
   }
+
 
   serviceTitle() {
     return Padding(

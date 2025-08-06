@@ -20,11 +20,6 @@ class _ServicesScreenState extends State<ServicesScreen> {
       "routeName": const AccountDetailScreen()
     },
     {
-      "image": "assets/home/fundTransfer.png",
-      "name": "Fund transfer",
-      "routeName": const FundTransferScreen(),
-    },
-    {
       "image": "assets/home/statement.png",
       "name": "Statement",
       "routeName": const StatementScreen(),
@@ -38,38 +33,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
       "image": "assets/bottomNavigation/money-16-regular.png",
       "name": "Loans",
       "routeName": const BottomNavigationScreen(id: 2)
-    },
-    {
-      "image": "assets/services/circum_credit-card-1.png",
-      "name": "Cards",
-      "routeName": null
-    },
-    {"image": "assets/home/receipt.png", "name": "Bill pay", "routeName": null},
-    {
-      "image": "assets/home/scanpay.png",
-      "name": "Scan and pay",
-      "routeName": null
-    },
-    {
-      "image": "assets/services/emojione-monotone_money-bag.png",
-      "name": "Mutual fund",
-      "routeName": null
-    },
-    {
-      "image": "assets/services/insuarance.png",
-      "name": "Insurance",
-      "routeName": null
-    },
-    {
-      "image": "assets/services/prime_shopping-bag.png",
-      "name": "Shop & offer",
-      "isDetail": false
-    },
-    {
-      "image": "assets/services/clarity_mobile-phone-line.png",
-      "name": "Recharge",
-      "routeName": null
-    },
+    }
   ];
 
   @override

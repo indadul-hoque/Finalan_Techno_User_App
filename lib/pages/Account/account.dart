@@ -42,116 +42,10 @@ class AccountScreen extends StatelessWidget {
           Expanded(
             child: ListView(
               padding: const EdgeInsets.symmetric(vertical: fixPadding),
-              physics: const BouncingScrollPhysics(),
-              children: [
-                tileWidget(Icons.account_balance,
-                    getTranslation(context, 'account.nearby_bank'), () {
-                  Navigator.pushNamed(context, '/nearByBank');
-                }),
-                tileWidget(FontAwesomeIcons.creditCard,
-                    getTranslation(context, 'account.nearby_atms'), () {
-                  Navigator.pushNamed(context, '/nearByAtm');
-                }),
-                pinTileWidget(context),
-                tileWidget(CupertinoIcons.globe,
-                    getTranslation(context, 'account.language'), () {
-                  Navigator.pushNamed(context, '/languages');
-                }),
-                tileWidget(Icons.privacy_tip_outlined,
-                    getTranslation(context, 'account.privacy_policy'), () {
-                  Navigator.pushNamed(context, '/privacyPolicy');
-                }),
-                tileWidget(CupertinoIcons.doc_plaintext,
-                    getTranslation(context, 'account.terms_condition'), () {
-                  Navigator.pushNamed(context, '/termsAndCondition');
-                }),
-                tileWidget(Icons.headset_mic_outlined,
-                    getTranslation(context, 'account.customer_support'), () {
-                  Navigator.pushNamed(context, '/customerSupport');
-                }),
-                tileWidget(
-                  Icons.logout,
-                  getTranslation(context, 'account.logout'),
-                  () {
-                    logoutDialog(context);
-                  },
-                ),
-              ],
+              physics: const BouncingScrollPhysics()
             ),
           )
         ],
-      ),
-    );
-  }
-
-  logoutDialog(BuildContext context) {
-    return showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10.0),
-        ),
-        insetPadding: const EdgeInsets.all(fixPadding * 2.0),
-        backgroundColor: whiteColor,
-        contentPadding: const EdgeInsets.all(fixPadding * 2.0),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              getTranslation(context, 'account.logout'),
-              style: bold18Primary,
-              textAlign: TextAlign.center,
-            ),
-            heightSpace,
-            heightSpace,
-            Text(
-              getTranslation(context, 'account.logout_text'),
-              style: bold16Black33,
-              textAlign: TextAlign.center,
-            ),
-            const Divider(
-              height: 30,
-              color: greyD9Color,
-              thickness: 1.5,
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                InkWell(
-                  onTap: () {
-                    Navigator.pop(context);
-                  },
-                  child: Container(
-                    constraints: BoxConstraints(
-                        maxWidth: (MediaQuery.sizeOf(context).width - 90) / 2),
-                    padding: const EdgeInsets.symmetric(horizontal: fixPadding),
-                    child: Text(
-                      getTranslation(context, 'account.cancel'),
-                      style: bold18Grey87,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ),
-                width5Space,
-                InkWell(
-                  onTap: () {
-                    Navigator.pushNamed(context, '/login');
-                  },
-                  child: Container(
-                    constraints: BoxConstraints(
-                        maxWidth: (MediaQuery.sizeOf(context).width - 90) / 2),
-                    padding: const EdgeInsets.symmetric(horizontal: fixPadding),
-                    child: Text(
-                      getTranslation(context, 'account.yes'),
-                      style: bold18Primary,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ),
-              ],
-            )
-          ],
-        ),
       ),
     );
   }
@@ -176,36 +70,6 @@ class AccountScreen extends StatelessWidget {
       minLeadingWidth: 0,
       title: Text(
         title,
-        style: semibold15Black,
-      ),
-    );
-  }
-
-  pinTileWidget(context) {
-    return ListTile(
-      onTap: () {
-        Navigator.pushNamed(context, '/changepin');
-      },
-      contentPadding: const EdgeInsets.symmetric(horizontal: fixPadding * 2),
-      leading: Container(
-        height: 35,
-        width: 35,
-        decoration: const BoxDecoration(
-          color: Color(0xFfDFDFDF),
-          shape: BoxShape.circle,
-        ),
-        child: Transform.rotate(
-          angle: 1,
-          child: const Icon(
-            Icons.push_pin_outlined,
-            color: primaryColor,
-            size: 18,
-          ),
-        ),
-      ),
-      minLeadingWidth: 0,
-      title: Text(
-        getTranslation(context, 'account.change_pin'),
         style: semibold15Black,
       ),
     );

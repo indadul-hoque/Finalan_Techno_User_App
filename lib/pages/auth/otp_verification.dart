@@ -1,22 +1,18 @@
 import 'dart:io';
-
 import 'package:fl_banking_app/localization/localization_const.dart';
 import 'package:flutter/material.dart';
 import 'package:pinput/pinput.dart';
 import 'package:shape_of_view_null_safe/shape_of_view_null_safe.dart';
-
 import '../../theme/theme.dart';
 
 class OtpVerification extends StatefulWidget {
   const OtpVerification({Key? key}) : super(key: key);
-
   @override
   State<OtpVerification> createState() => _OtpVerificationState();
 }
 
 class _OtpVerificationState extends State<OtpVerification> {
   DateTime? backPressTime;
-
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -88,6 +84,7 @@ class _OtpVerificationState extends State<OtpVerification> {
                 color: primaryColor,
               ),
               onCompleted: (value) {
+                // Navigation is now handled exclusively by the Pinput on completion
                 Navigator.pushNamed(context, '/bottomNavigation');
               },
               defaultPinTheme: PinTheme(
@@ -202,7 +199,8 @@ class _OtpVerificationState extends State<OtpVerification> {
   verifyButton(Size size) {
     return GestureDetector(
       onTap: () {
-        Navigator.pushNamed(context, '/enterpin');
+        // You can add your OTP verification logic here if needed.
+        // The navigation has been moved to the Pinput widget.
       },
       child: Container(
         width: double.maxFinite,
@@ -250,3 +248,4 @@ class _OtpVerificationState extends State<OtpVerification> {
     Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
   }
 }
+
