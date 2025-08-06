@@ -71,59 +71,46 @@ class _ServicesScreenState extends State<ServicesScreen> {
       ),
       itemCount: servicelist.length,
       itemBuilder: (context, index) {
-        return OptimizedServiceGridItem(
-          serviceData: servicelist[index],
+        return GestureDetector(
+          onTap: () {
+            final routeName = servicelist[index]['routeName'] as String?;
+            if (routeName != null) {
+              Navigator.pushNamed(context, routeName);
+            }
+          },
+          child: Container(
+            padding: const EdgeInsets.all(fixPadding),
+            decoration: BoxDecoration(
+              color: whiteColor,
+              borderRadius: BorderRadius.circular(10),
+              boxShadow: [
+                BoxShadow(
+                  color: blackColor.withOpacity(0.25),
+                  blurRadius: 6,
+                )
+              ],
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Image.asset(
+                  servicelist[index]['image'].toString(),
+                  height: 25,
+                  width: 25,
+                  color: primaryColor,
+                ),
+                height5Space,
+                Text(
+                  servicelist[index]['name'].toString(),
+                  style: bold15Primary,
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
+                )
+              ],
+            ),
+          ),
         );
       },
-    );
-  }
-}
-
-class OptimizedServiceGridItem extends StatelessWidget {
-  const OptimizedServiceGridItem({Key? key, required this.serviceData}) : super(key: key);
-
-  final Map<String, dynamic> serviceData;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        final routeName = serviceData['routeName'] as String?;
-        if (routeName != null) {
-          Navigator.pushNamed(context, routeName);
-        }
-      },
-      child: Container(
-        padding: const EdgeInsets.all(fixPadding),
-        decoration: BoxDecoration(
-          color: whiteColor,
-          borderRadius: BorderRadius.circular(10),
-          boxShadow: [
-            BoxShadow(
-              color: blackColor.withOpacity(0.25),
-              blurRadius: 6,
-            )
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Image.asset(
-              serviceData['image'].toString(),
-              height: 25,
-              width: 25,
-              color: primaryColor,
-            ),
-            height5Space,
-            Text(
-              serviceData['name'].toString(),
-              style: bold15Primary,
-              textAlign: TextAlign.center,
-              overflow: TextOverflow.ellipsis,
-            )
-          ],
-        ),
-      ),
     );
   }
 }

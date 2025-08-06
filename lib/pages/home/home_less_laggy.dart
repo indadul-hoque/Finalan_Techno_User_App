@@ -107,8 +107,64 @@ class _HomeScreenState extends State<HomeScreen> {
   latestTransectionList() {
     return ColumnBuilder(
       itemBuilder: (context, index) {
-        return OptimizedTransactionCard(
-          transactionData: transectionlist[index],
+        return Container(
+          width: double.maxFinite,
+          margin: const EdgeInsets.symmetric(
+              vertical: fixPadding, horizontal: fixPadding * 2),
+          padding: const EdgeInsets.all(fixPadding * 1.5),
+          decoration: BoxDecoration(
+            color: whiteColor,
+            borderRadius: BorderRadius.circular(10),
+            boxShadow: [
+              BoxShadow(
+                color: blackColor.withOpacity(0.25),
+                blurRadius: 6,
+              )
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                height: 38,
+                width: 38,
+                padding: const EdgeInsets.all(fixPadding / 1.2),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFEDEBEB),
+                  shape: BoxShape.circle,
+                ),
+                child: Image.asset(
+                  transectionlist[index]['image'].toString(),
+                ),
+              ),
+              widthSpace,
+              width5Space,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      transectionlist[index]['name'].toString(),
+                      style: bold15Black33,
+                    ),
+                    heightBox(3.0),
+                    Text(
+                      transectionlist[index]['title'].toString(),
+                      style: bold12Grey94,
+                    )
+                  ],
+                ),
+              ),
+              transectionlist[index]['isCredit'] == false
+                  ? Text(
+                      "-\$${transectionlist[index]['money']}",
+                      style: bold15Red,
+                    )
+                  : Text(
+                      "+\$${transectionlist[index]['money']}",
+                      style: bold15Green,
+                    )
+            ],
+          ),
         );
       },
       itemCount: transectionlist.length,
@@ -155,8 +211,45 @@ class _HomeScreenState extends State<HomeScreen> {
       crossAxisSpacing: fixPadding * 2,
       children: [
         for (int i = 0; i < servicelist.length; i++)
-          OptimizedServiceCard(
-            serviceData: servicelist[i],
+          GestureDetector(
+            onTap: () {
+              if (servicelist[i]['isDetail'] == true) {
+                Navigator.pushNamed(
+                  context,
+                  servicelist[i]['routeName'].toString(),
+                );
+              }
+            },
+            child: Container(
+              padding: const EdgeInsets.all(fixPadding),
+              decoration: BoxDecoration(
+                color: whiteColor,
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: blackColor.withOpacity(0.25),
+                    blurRadius: 6,
+                  )
+                ],
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Image.asset(
+                    servicelist[i]['image'].toString(),
+                    height: 24,
+                    width: 24,
+                    color: primaryColor,
+                  ),
+                  height5Space,
+                  Text(servicelist[i]['name'].toString(),
+                      style: bold15Primary,
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis)
+                ],
+              ),
+            ),
           ),
         GestureDetector(
           onTap: () {
@@ -354,127 +447,6 @@ class OptimizedAccountCard extends StatelessWidget {
             Text(
               accountData['accountNo'].toString(),
               style: bold14EE,
-            )
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class OptimizedTransactionCard extends StatelessWidget {
-  const OptimizedTransactionCard({Key? key, required this.transactionData}) : super(key: key);
-
-  final Map<String, dynamic> transactionData;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.maxFinite,
-      margin: const EdgeInsets.symmetric(
-          vertical: fixPadding, horizontal: fixPadding * 2),
-      padding: const EdgeInsets.all(fixPadding * 1.5),
-      decoration: BoxDecoration(
-        color: whiteColor,
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: [
-          BoxShadow(
-            color: blackColor.withOpacity(0.25),
-            blurRadius: 6,
-          )
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            height: 38,
-            width: 38,
-            padding: const EdgeInsets.all(fixPadding / 1.2),
-            decoration: const BoxDecoration(
-              color: Color(0xFFEDEBEB),
-              shape: BoxShape.circle,
-            ),
-            child: Image.asset(
-              transactionData['image'].toString(),
-            ),
-          ),
-          widthSpace,
-          width5Space,
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  transactionData['name'].toString(),
-                  style: bold15Black33,
-                ),
-                heightBox(3.0),
-                Text(
-                  transactionData['title'].toString(),
-                  style: bold12Grey94,
-                )
-              ],
-            ),
-          ),
-          transactionData['isCredit'] == false
-              ? Text(
-                  "-\$${transactionData['money']}",
-                  style: bold15Red,
-                )
-              : Text(
-                  "+\$${transactionData['money']}",
-                  style: bold15Green,
-                )
-        ],
-      ),
-    );
-  }
-}
-
-class OptimizedServiceCard extends StatelessWidget {
-  const OptimizedServiceCard({Key? key, required this.serviceData}) : super(key: key);
-
-  final Map<String, dynamic> serviceData;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        if (serviceData['isDetail'] == true) {
-          Navigator.pushNamed(
-            context,
-            serviceData['routeName'].toString(),
-          );
-        }
-      },
-      child: Container(
-        padding: const EdgeInsets.all(fixPadding),
-        decoration: BoxDecoration(
-          color: whiteColor,
-          borderRadius: BorderRadius.circular(10),
-          boxShadow: [
-            BoxShadow(
-              color: blackColor.withOpacity(0.25),
-              blurRadius: 6,
-            )
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Image.asset(
-              serviceData['image'].toString(),
-              height: 24,
-              width: 24,
-              color: primaryColor,
-            ),
-            height5Space,
-            Text(
-              serviceData['name'].toString(),
-              style: bold15Primary,
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
             )
           ],
         ),

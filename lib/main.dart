@@ -52,6 +52,7 @@ class _MyAppState extends State<MyApp> {
         statusBarIconBrightness: Brightness.light,
       ),
       child: MaterialApp(
+        showPerformanceOverlay: true,
         title: 'Banking App',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
