@@ -88,7 +88,7 @@ class _OtpVerificationState extends State<OtpVerification> {
                 color: primaryColor,
               ),
               onCompleted: (value) {
-                Navigator.pushNamed(context, '/enterpin');
+                Navigator.pushNamed(context, '/bottomNavigation');
               },
               defaultPinTheme: PinTheme(
                 height: 48.0,

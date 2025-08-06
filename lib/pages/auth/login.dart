@@ -179,7 +179,7 @@ class _LoginScreenState extends State<LoginScreen> {
   loginButton(Size size) {
     return GestureDetector(
       onTap: () {
-        Navigator.pushNamed(context, '/register');
+        Navigator.pushNamed(context, '/otp');
       },
       child: Container(
         width: double.maxFinite,
