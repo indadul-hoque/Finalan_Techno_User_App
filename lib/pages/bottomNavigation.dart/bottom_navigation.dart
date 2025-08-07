@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:fl_banking_app/localization/localization_const.dart';
 import 'package:fl_banking_app/pages/Account/account.dart';
 import 'package:fl_banking_app/pages/deposit/deposit.dart';
@@ -8,11 +7,15 @@ import 'package:fl_banking_app/pages/loans/loans.dart';
 import 'package:fl_banking_app/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class BottomNavigationScreen extends StatefulWidget {
-  const BottomNavigationScreen({Key? key, this.id}) : super(key: key);
-
+  // Add phoneNumber to the constructor
+  final String? phoneNumber;
   final int? id;
+
+  const BottomNavigationScreen({Key? key, this.id, this.phoneNumber}) : super(key: key);
 
   @override
   State<BottomNavigationScreen> createState() => _BottomNavigationScreenState();
@@ -20,15 +23,54 @@ class BottomNavigationScreen extends StatefulWidget {
 
 class _BottomNavigationScreenState extends State<BottomNavigationScreen> {
   int? currentPage;
-
   DateTime? backPressTime;
+  // State variables for user data and loading state
+  Map<String, dynamic>? userData;
+  bool _isLoading = true;
 
   @override
   void initState() {
+    super.initState();
     setState(() {
       currentPage = widget.id ?? 0;
     });
-    super.initState();
+    // Fetch user data when the screen initializes
+    if (widget.phoneNumber != null) {
+      _fetchUserData();
+    } else {
+      // If phone number is not passed, handle it (e.g., show an error)
+      setState(() {
+        _isLoading = false;
+      });
+      // Optionally, you can navigate back to the login screen
+      // Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+    }
+  }
+
+  Future<void> _fetchUserData() async {
+    // Replace with your actual user data API endpoint
+    final url = Uri.parse('YOUR_USER_DATA_API_ENDPOINT/${widget.phoneNumber}');
+    
+    try {
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        setState(() {
+          userData = jsonDecode(response.body);
+          _isLoading = false;
+        });
+        print('User data fetched successfully: $userData');
+      } else {
+        print('Failed to load user data: ${response.statusCode}');
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('An error occurred while fetching user data: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   final pages = [
@@ -40,6 +82,16 @@ class _BottomNavigationScreenState extends State<BottomNavigationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      // Show a loading indicator while fetching user data
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+    
+    // Once data is loaded, build the main UI
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
@@ -139,3 +191,4 @@ class _BottomNavigationScreenState extends State<BottomNavigationScreen> {
     }
   }
 }
+

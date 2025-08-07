@@ -4,10 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:pinput/pinput.dart';
 import 'package:shape_of_view_null_safe/shape_of_view_null_safe.dart';
 import '../../theme/theme.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'package:fluttertoast/fluttertoast.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class OtpVerification extends StatefulWidget {
   const OtpVerification({Key? key}) : super(key: key);
@@ -17,102 +13,6 @@ class OtpVerification extends StatefulWidget {
 
 class _OtpVerificationState extends State<OtpVerification> {
   DateTime? backPressTime;
-  final TextEditingController _otpController = TextEditingController();
-  bool _isLoading = false;
-  String? _phoneNumber;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Get the phone number passed from the previous screen
-    _phoneNumber = ModalRoute.of(context)!.settings.arguments as String?;
-  }
-
-  // API function to verify the OTP
-  Future<void> _verifyOtp() async {
-  final otp = _otpController.text;
-
-  // Perform basic validation on the OTP.
-  if (otp.isEmpty || otp.length < 4) {
-    _showToast('Please enter a 4-digit OTP.');
-    return;
-  }
-
-  setState(() {
-    _isLoading = true;
-  });
-
-  // Construct the URL to match the cURL command's format.
-  // The phone number and OTP are included directly in the URL path.
-  final url = Uri.parse('https://api.cornix.tech/verify/$_phoneNumber/otp/$otp');
-  try {
-    final response = await http.get(url); 
-
-    if (response.statusCode == 200) {
-      _showToast('OTP verified successfully!');
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setString('phoneNumber', _phoneNumber!);
-
-      Navigator.pushNamedAndRemoveUntil(context, '/bottomNavigation', (route) => false);
-    } else {
-      final responseData = jsonDecode(response.body);
-      _showToast(responseData['message'] ?? 'Invalid OTP. Please try again.');
-    }
-  } catch (e) {
-    _showToast('An error occurred. Check your connection.');
-  } finally {
-    setState(() {
-      _isLoading = false;
-    });
-  }
-}
-
-  
-  // API function to resend the OTP
-  Future<void> _resendOtp() async {
-    setState(() {
-      _isLoading = true;
-    });
-
-    // Replace with your actual resend OTP API endpoint
-    final url = Uri.parse('YOUR_RESEND_OTP_API_ENDPOINT');
-
-    try {
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'phone_number': _phoneNumber,
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        _showToast('New OTP sent successfully!');
-      } else {
-        final responseData = jsonDecode(response.body);
-        _showToast(responseData['message'] ?? 'Failed to resend OTP.');
-      }
-    } catch (e) {
-      _showToast('An error occurred. Please try again.');
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  void _showToast(String message) {
-    Fluttertoast.showToast(
-      msg: message,
-      toastLength: Toast.LENGTH_LONG,
-      gravity: ToastGravity.BOTTOM,
-      timeInSecForIosWeb: 3,
-      backgroundColor: Colors.black54,
-      textColor: Colors.white,
-      fontSize: 16.0,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -178,15 +78,14 @@ class _OtpVerificationState extends State<OtpVerification> {
             heightSpace,
             Pinput(
               length: 4,
-              controller: _otpController, // Add controller to get the OTP value
               cursor: Container(
                 height: 22.0,
                 width: 1.5,
                 color: primaryColor,
               ),
               onCompleted: (value) {
-                // Call the verification logic when Pinput is completed
-                _verifyOtp();
+                // Navigation is now handled exclusively by the Pinput on completion
+                Navigator.pushNamed(context, '/bottomNavigation');
               },
               defaultPinTheme: PinTheme(
                 height: 48.0,
@@ -221,7 +120,7 @@ class _OtpVerificationState extends State<OtpVerification> {
   resendButton() {
     return Center(
       child: TextButton(
-        onPressed: _isLoading ? null : _resendOtp, // Call resend logic
+        onPressed: () {},
         style: ButtonStyle(
           overlayColor: WidgetStateProperty.resolveWith(
               (states) => primaryColor.withValues(alpha: 0.1)),
@@ -299,15 +198,16 @@ class _OtpVerificationState extends State<OtpVerification> {
 
   verifyButton(Size size) {
     return GestureDetector(
-      // Call the new _verifyOtp function
-      onTap: _isLoading ? null : _verifyOtp,
+      onTap: () {
+        // You can add your OTP verification logic here if needed.
+        // The navigation has been moved to the Pinput widget.
+      },
       child: Container(
         width: double.maxFinite,
         padding: const EdgeInsets.all(fixPadding * 1.5),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(10),
-          // Change button color when loading
-          color: _isLoading ? Colors.grey : primaryColor,
+          color: primaryColor,
           boxShadow: [
             BoxShadow(
               color: primaryColor.withValues(alpha: 0.1),
@@ -317,12 +217,10 @@ class _OtpVerificationState extends State<OtpVerification> {
           ],
         ),
         alignment: Alignment.center,
-        child: _isLoading
-            ? const CircularProgressIndicator(color: whiteColor)
-            : Text(
-                getTranslation(context, 'otp.verify'),
-                style: bold18White,
-              ),
+        child: Text(
+          getTranslation(context, 'otp.verify'),
+          style: bold18White,
+        ),
       ),
     );
   }

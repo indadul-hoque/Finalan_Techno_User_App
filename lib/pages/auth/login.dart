@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:fl_banking_app/localization/localization_const.dart';
 import 'package:fl_banking_app/pages/Account/languages.dart';
 import 'package:flutter/material.dart';
@@ -7,20 +6,94 @@ import 'package:flutter/services.dart';
 import 'package:intl_phone_field/country_picker_dialog.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:shape_of_view_null_safe/shape_of_view_null_safe.dart';
-
 import '../../theme/theme.dart';
+// Import http for API calls
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+// Import fluttertoast for showing toast messages
+import 'package:fluttertoast/fluttertoast.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
-
   @override
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
 class _LoginScreenState extends State<LoginScreen> {
   TextEditingController phoneController = TextEditingController();
-
   DateTime? backPressTime;
+  // State variable to manage the loading indicator
+  bool _isLoading = false;
+
+  // Function to handle the API call
+  Future<void> _handleLogin() async {
+    // Check if the phone number is entered
+    String? phoneNumber = phoneController.text;
+    if (phoneNumber.isEmpty) {
+      _showToast('Please enter your phone number.');
+      return;
+    }
+
+    // Show a loading indicator
+    setState(() {
+      _isLoading = true;
+    });
+
+    // Replace with your actual API endpoint URL
+    final url = Uri.parse('https://api.cornix.tech/login');
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+        'Content-Type': 'application/json'},
+        body: jsonEncode({'phone_number': phoneNumber}),
+      );
+
+      if (response.statusCode == 200) {
+        // API call was successful
+        final responseData = jsonDecode(response.body);
+        print('Login successful: $responseData');
+
+        // Show a success toast message
+        _showToast('OTP sent successfully!');
+
+        // Navigate to the OTP screen, passing the phone number for verification
+        Navigator.pushNamed(context, '/otp', arguments: phoneNumber);
+      } else {
+        // API call failed
+        print('Login failed: ${response.statusCode}');
+        print('Response body: ${response.body}');
+
+        // Show a failure toast message
+        _showToast('Login failed. Please try again.');
+      }
+    } catch (e) {
+      // An error occurred during the API call
+      print('An error occurred: $e');
+
+      // Show a general error message
+      _showToast('An error occurred. Check your connection.');
+    } finally {
+      // Hide the loading indicator
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  // Function to show a toast message
+  void _showToast(String message) {
+    Fluttertoast.showToast(
+      msg: message,
+      toastLength: Toast.LENGTH_LONG,
+      gravity: ToastGravity.BOTTOM,
+      timeInSecForIosWeb: 3,
+      backgroundColor: Colors.black54,
+      textColor: Colors.white,
+      fontSize: 16.0,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -178,15 +251,15 @@ class _LoginScreenState extends State<LoginScreen> {
 
   loginButton(Size size) {
     return GestureDetector(
-      onTap: () {
-        Navigator.pushNamed(context, '/otp');
-      },
+      // Use the new _handleLogin function
+      onTap: _isLoading ? null : _handleLogin,
       child: Container(
         width: double.maxFinite,
         padding: const EdgeInsets.all(fixPadding * 1.5),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(10),
-          color: primaryColor,
+          // Change button color when loading
+          color: _isLoading ? Colors.grey : primaryColor,
           boxShadow: [
             BoxShadow(
               color: primaryColor.withValues(alpha: 0.1),
@@ -196,10 +269,12 @@ class _LoginScreenState extends State<LoginScreen> {
           ],
         ),
         alignment: Alignment.center,
-        child: Text(
-          getTranslation(context, 'login.login'),
-          style: bold18White,
-        ),
+        child: _isLoading
+            ? const CircularProgressIndicator(color: whiteColor)
+            : Text(
+                getTranslation(context, 'login.login'),
+                style: bold18White,
+              ),
       ),
     );
   }
@@ -300,3 +375,4 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 }
+

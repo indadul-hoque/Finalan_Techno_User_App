@@ -5,10 +5,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:page_transition/page_transition.dart';
-
 import 'package:fl_banking_app/pages/screens.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'pages/auth/login.dart';
+import 'pages/bottomNavigation.dart/bottom_navigation.dart';
 
-void main() {
+// Inject the new main() function
+String? phoneNumber;
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  phoneNumber = prefs.getString('phoneNumber');
   runApp(const MyApp());
 }
 
@@ -52,7 +60,6 @@ class _MyAppState extends State<MyApp> {
         statusBarIconBrightness: Brightness.light,
       ),
       child: MaterialApp(
-        showPerformanceOverlay: true,
         title: 'Banking App',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
@@ -76,7 +83,10 @@ class _MyAppState extends State<MyApp> {
               surfaceTintColor: Colors.transparent,
               backgroundColor: scaffoldBgColor),
         ),
-        home: const SplashScreen(),
+        // Update the home widget to check for login status
+        home: (phoneNumber == null || phoneNumber!.isEmpty)
+            ? const SplashScreen()
+            : const BottomNavigationScreen(),
         onGenerateRoute: routes,
         locale: _locale,
         supportedLocales: const [
@@ -108,7 +118,9 @@ class _MyAppState extends State<MyApp> {
     switch (settings.name) {
       case '/':
         return PageTransition(
-          child: const SplashScreen(),
+          child: (phoneNumber == null || phoneNumber!.isEmpty)
+              ? const SplashScreen()
+              : const BottomNavigationScreen(),
           type: PageTransitionType.fade,
           settings: settings,
         );
@@ -130,9 +142,12 @@ class _MyAppState extends State<MyApp> {
           type: PageTransitionType.rightToLeft,
           settings: settings,
         );
+      // The phoneNumber will now be passed through the constructor.
+      // This route will need to be updated to pass the phoneNumber.
       case '/bottomNavigation':
+        final args = settings.arguments as String?;
         return PageTransition(
-          child: const BottomNavigationScreen(),
+          child: BottomNavigationScreen(phoneNumber: args),
           type: PageTransitionType.rightToLeft,
           settings: settings,
         );
@@ -207,9 +222,11 @@ class _MyAppState extends State<MyApp> {
           child: const EditProfile(),
           type: PageTransitionType.rightToLeft,
           settings: settings,
-        );        
+        );
       default:
         return null;
     }
   }
 }
+
+
