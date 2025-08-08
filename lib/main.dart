@@ -10,18 +10,24 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'pages/auth/login.dart';
 import 'pages/bottomNavigation.dart/bottom_navigation.dart';
 
-// Inject the new main() function
+import 'package:local_auth/local_auth.dart';
+import 'package:fl_banking_app/services/auth_service.dart';
+import 'package:fl_banking_app/widgets/biometric_gate.dart';
+
 String? phoneNumber;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final SharedPreferences prefs = await SharedPreferences.getInstance();
   phoneNumber = prefs.getString('phoneNumber');
-  runApp(const MyApp());
+  final isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+  runApp(MyApp(isLoggedIn: isLoggedIn, phoneNumber: phoneNumber));
 }
 
 class MyApp extends StatefulWidget {
-  const MyApp({Key? key}) : super(key: key);
+  final bool isLoggedIn;
+  final String? phoneNumber;
+  const MyApp({Key? key, required this.isLoggedIn, this.phoneNumber}) : super(key: key);
 
   static void setLocale(BuildContext context, Locale locale) {
     _MyAppState state = context.findAncestorStateOfType<_MyAppState>()!;
@@ -83,10 +89,9 @@ class _MyAppState extends State<MyApp> {
               surfaceTintColor: Colors.transparent,
               backgroundColor: scaffoldBgColor),
         ),
-        // Update the home widget to check for login status
-        home: (phoneNumber == null || phoneNumber!.isEmpty)
-            ? const SplashScreen()
-            : const BottomNavigationScreen(),
+	home: (widget.phoneNumber == null || widget.phoneNumber!.isEmpty || !widget.isLoggedIn)
+	    ? const SplashScreen()
+	    : const BiometricGate(),
         onGenerateRoute: routes,
         locale: _locale,
         supportedLocales: const [

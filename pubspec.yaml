@@ -47,6 +47,7 @@ dependencies:
   flutter_launcher_icons: ^0.14.3
   http: ^1.4.0
   fluttertoast: ^8.2.12
+  local_auth: ^2.1.5
 
 dev_dependencies:
   flutter_test:

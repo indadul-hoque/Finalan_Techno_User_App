@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:fl_banking_app/localization/localization_const.dart';
 import 'package:flutter/material.dart';
@@ -9,6 +10,8 @@ import 'dart:convert';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:fl_banking_app/services/auth_service.dart';
+
 class OtpVerification extends StatefulWidget {
   const OtpVerification({Key? key}) : super(key: key);
   @override
@@ -16,6 +19,9 @@ class OtpVerification extends StatefulWidget {
 }
 
 class _OtpVerificationState extends State<OtpVerification> {
+  bool _isResendEnabled = false;
+  int _resendSeconds = 30;
+  Timer? _resendTimer;
   DateTime? backPressTime;
   final TextEditingController _otpController = TextEditingController();
   bool _isLoading = false;
@@ -28,32 +34,95 @@ class _OtpVerificationState extends State<OtpVerification> {
     _phoneNumber = ModalRoute.of(context)!.settings.arguments as String?;
   }
 
-  // API function to verify the OTP
-  Future<void> _verifyOtp() async {
-  final otp = _otpController.text;
+  @override
+void dispose() {
+  _resendTimer?.cancel();
+  _otpController.dispose();
+  super.dispose();
+}
 
-  // Perform basic validation on the OTP.
+
+  @override
+	void initState() {
+	  super.initState();
+	  _startResendTimer();
+	}
+
+  void _startResendTimer() {
+  setState(() {
+    _isResendEnabled = false;
+    _resendSeconds = 30;
+  });
+  _resendTimer?.cancel();
+  _resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+    if (_resendSeconds == 0) {
+      setState(() {
+        _isResendEnabled = true;
+      });
+      timer.cancel();
+    } else {
+      setState(() {
+        _resendSeconds--;
+      });
+    }
+  });
+}
+
+
+Future<void> _verifyOtp() async {
+  final otp = _otpController.text;
   if (otp.isEmpty || otp.length < 4) {
     _showToast('Please enter a 4-digit OTP.');
     return;
   }
 
-  setState(() {
-    _isLoading = true;
-  });
-
-  // Construct the URL to match the cURL command's format.
-  // The phone number and OTP are included directly in the URL path.
+  setState(() => _isLoading = true);
+  
   final url = Uri.parse('https://api.cornix.tech/verify/$_phoneNumber/otp/$otp');
+  
   try {
-    final response = await http.get(url); 
-
+    final response = await http.get(url);
     if (response.statusCode == 200) {
       _showToast('OTP verified successfully!');
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      final prefs = await SharedPreferences.getInstance();
       await prefs.setString('phoneNumber', _phoneNumber!);
+      await prefs.setBool('isLoggedIn', true);
+      
+      final authService = AuthService();
+      final hasBiometrics = await authService.hasBiometricCapability();
+      if (hasBiometrics) {
+        final shouldEnable = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('Enable Biometric Authentication?'),
+            content: Text('Secure your account with fingerprint or face recognition for faster access'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text('Not Now'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: Text('Enable'),
+              ),
+            ],
+          ),
+        );
+        
+        if (shouldEnable ?? false) {
+          final authenticated = await authService.authenticate();
+          if (authenticated) {
+            await authService.setBiometricEnabled(true);
+          }
+        }
+      }
+      
+      Navigator.pushNamedAndRemoveUntil(
+  context,
+  '/bottomNavigation',
+  (route) => false
+);
 
-      Navigator.pushNamedAndRemoveUntil(context, '/bottomNavigation', (route) => false);
     } else {
       final responseData = jsonDecode(response.body);
       _showToast(responseData['message'] ?? 'Invalid OTP. Please try again.');
@@ -61,57 +130,53 @@ class _OtpVerificationState extends State<OtpVerification> {
   } catch (e) {
     _showToast('An error occurred. Check your connection.');
   } finally {
+    setState(() => _isLoading = false);
+  }
+}
+
+  Future<void> _resendOtp() async {
+  if (!_isResendEnabled) return; // Do nothing if disabled
+
+  setState(() {
+    _isLoading = true;
+  });
+
+  final url = Uri.parse('https://api.cornix.tech/login'); // Same endpoint as login for OTP send
+
+  try {
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'phone_number': _phoneNumber}),
+    );
+    if (response.statusCode == 200) {
+      _showToast('New OTP sent successfully!');
+      _startResendTimer(); // Restart timer after successful resend
+    } else {
+      final responseData = jsonDecode(response.body);
+      _showToast(responseData['message'] ?? 'Failed to resend OTP.');
+    }
+  } catch (e) {
+    _showToast('An error occurred. Please try again.');
+  } finally {
     setState(() {
       _isLoading = false;
     });
   }
 }
 
-  
-  // API function to resend the OTP
-  Future<void> _resendOtp() async {
-    setState(() {
-      _isLoading = true;
-    });
 
-    // Replace with your actual resend OTP API endpoint
-    final url = Uri.parse('YOUR_RESEND_OTP_API_ENDPOINT');
-
-    try {
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'phone_number': _phoneNumber,
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        _showToast('New OTP sent successfully!');
-      } else {
-        final responseData = jsonDecode(response.body);
-        _showToast(responseData['message'] ?? 'Failed to resend OTP.');
-      }
-    } catch (e) {
-      _showToast('An error occurred. Please try again.');
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  void _showToast(String message) {
-    Fluttertoast.showToast(
-      msg: message,
-      toastLength: Toast.LENGTH_LONG,
-      gravity: ToastGravity.BOTTOM,
-      timeInSecForIosWeb: 3,
-      backgroundColor: Colors.black54,
-      textColor: Colors.white,
-      fontSize: 16.0,
-    );
-  }
+  void _showToast(String message, {bool isError = false}) {
+  Fluttertoast.showToast(
+    msg: message,
+    toastLength: Toast.LENGTH_LONG,
+    gravity: ToastGravity.BOTTOM,
+    timeInSecForIosWeb: 5,  // Increased duration
+    backgroundColor: isError ? Colors.red : Colors.black54,
+    textColor: Colors.white,
+    fontSize: 16.0,
+  );
+}
 
   @override
   Widget build(BuildContext context) {
@@ -219,20 +284,28 @@ class _OtpVerificationState extends State<OtpVerification> {
   }
 
   resendButton() {
-    return Center(
-      child: TextButton(
-        onPressed: _isLoading ? null : _resendOtp, // Call resend logic
-        style: ButtonStyle(
-          overlayColor: WidgetStateProperty.resolveWith(
-              (states) => primaryColor.withValues(alpha: 0.1)),
-        ),
-        child: Text(
-          getTranslation(context, 'otp.resend'),
-          style: bold15Grey94,
+  return Center(
+    child: TextButton(
+      onPressed: (_isLoading || !_isResendEnabled) ? null : _resendOtp,
+      style: ButtonStyle(
+        overlayColor: MaterialStateProperty.resolveWith(
+          (states) => primaryColor.withOpacity(0.1),
         ),
       ),
-    );
-  }
+      child: Text(
+        _isResendEnabled
+            ? getTranslation(context, 'otp.resend')
+            : 'Resend OTP in ${_resendSeconds}s',
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          color: _isResendEnabled ? Colors.black : Colors.grey,
+          fontSize: 15,
+        ),
+      ),
+    ),
+  );
+}
+
 
   otpText(Size size) {
     return Positioned(
