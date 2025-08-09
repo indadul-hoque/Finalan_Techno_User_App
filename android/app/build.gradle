@@ -20,7 +20,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace "com.example.fl_banking_app"
+    namespace "com.finalan.techno"
     compileSdkVersion flutter.compileSdkVersion
     ndkVersion "25.1.8937393"
 
