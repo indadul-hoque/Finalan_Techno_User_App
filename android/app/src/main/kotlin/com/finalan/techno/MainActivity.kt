@@ -1,4 +1,4 @@
-package com.example.fl_banking_app
+package com.finalan.techno
 
 import io.flutter.embedding.android.FlutterFragmentActivity
 
