@@ -1,35 +1,70 @@
 import 'package:dotted_border/dotted_border.dart';
 import 'package:fl_banking_app/localization/localization_const.dart';
 import 'package:fl_banking_app/widget/column_builder.dart';
+import 'package:fl_banking_app/services/bank_accounts_service.dart';
+import 'package:fl_banking_app/pages/deposit/deposit_statement_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../theme/theme.dart';
 
 class DepositScreen extends StatefulWidget {
-  const DepositScreen({Key? key}) : super(key: key);
+  final String? phoneNumber;
+  
+  const DepositScreen({Key? key, this.phoneNumber}) : super(key: key);
   @override
   State<DepositScreen> createState() => _DepositScreenState();
 }
 
 class _DepositScreenState extends State<DepositScreen> {
-  final currentLoans = [
-    {
-      "icon": "assets/loan/home-database.png",
-      "name": "SBI Bank",
-      "accountNo": "XXXX XXXX XXXX 1222",
-      "amount": 20000.00
-    },
-    {
-      "icon": "assets/loan/car-outline.png",
-      "name": "HDFC Bank",
-      "accountNo": "XXXX XXXX XXXX 1222",
-      "amount": 10000.00
-    },
-  ];
+  List<Map<String, dynamic>> savingsAccounts = [];
+  bool isLoading = true;
+  String? errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    final phoneNumber = widget.phoneNumber ?? '9519874704';
+    _fetchSavingsAccounts(phoneNumber);
+  }
+
+  Future<void> _fetchSavingsAccounts([String? phoneNumber]) async {
+    final phone = phoneNumber ?? widget.phoneNumber ?? '9519874704';
+    try {
+      setState(() {
+        isLoading = true;
+        errorMessage = null;
+      });
+
+      final accounts = await BankAccountsService.fetchBankAccounts(phone);
+      
+      if (accounts != null) {
+        final savings = BankAccountsService.getSavingsAccounts();
+        setState(() {
+          savingsAccounts = savings;
+          isLoading = false;
+        });
+        
+
+      } else {
+        setState(() {
+          isLoading = false;
+          errorMessage = BankAccountsService.errorMessage ?? 'Failed to fetch savings accounts';
+        });
+        BankAccountsService.showToast(errorMessage!, isError: true);
+      }
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+        errorMessage = 'An error occurred: $e';
+      });
+      BankAccountsService.showToast(errorMessage!, isError: true);
+    }
+  }
+
+
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
@@ -53,21 +88,74 @@ class _DepositScreenState extends State<DepositScreen> {
           style: bold20White,
         ),
       ),
-      body: ListView(
-        physics: const BouncingScrollPhysics(),
-        padding: EdgeInsets.zero,
-        children: [
-          // Removed currentLoanTitle() to remove the heading
-          currentLoansListContent(),
-          heightSpace,
-        ],
-      ),
+      body: isLoading 
+        ? const Center(child: CircularProgressIndicator())
+        : errorMessage != null
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    errorMessage!,
+                    style: bold16Black33,
+                    textAlign: TextAlign.center,
+                  ),
+                  heightSpace,
+                  ElevatedButton(
+                    onPressed: () => _fetchSavingsAccounts(),
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            )
+          : ListView(
+              physics: const BouncingScrollPhysics(),
+              padding: EdgeInsets.zero,
+              children: [
+                currentLoansListContent(),
+                heightSpace,
+              ],
+            ),
     );
   }
 
   currentLoansListContent() {
+    if (savingsAccounts.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(fixPadding * 2),
+          child: Column(
+            children: [
+              Icon(
+                Icons.account_balance_outlined,
+                size: 64,
+                color: grey94Color,
+              ),
+              heightSpace,
+              Text(
+                'No savings accounts found',
+                style: bold16Black33,
+                textAlign: TextAlign.center,
+              ),
+              Text(
+                'You don\'t have any active savings accounts',
+                style: semibold14Grey94,
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return ColumnBuilder(
       itemBuilder: (context, index) {
+        final account = savingsAccounts[index];
+        final planDetails = account['planDetails'] ?? {};
+        final balance = account['balance'] ?? 0.0;
+        final openingDate = account['openingDate'] ?? 'N/A';
+        final interestRate = planDetails['annualInterestRate'] ?? '0';
+        
         return Container(
           margin: const EdgeInsets.symmetric(
               vertical: fixPadding, horizontal: fixPadding * 2),
@@ -96,7 +184,7 @@ class _DepositScreenState extends State<DepositScreen> {
                         color: Color(0xFFEDEBEB),
                       ),
                       child: Image.asset(
-                        currentLoans[index]['icon'].toString(),
+                        "assets/loan/home-database.png",
                       ),
                     ),
                     widthSpace,
@@ -106,30 +194,76 @@ class _DepositScreenState extends State<DepositScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            currentLoans[index]['name'].toString(),
+                            planDetails['schemeName'] ?? 'Savings Account',
                             style: bold16Black33,
                             overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
                           ),
+                          const SizedBox(height: 2),
                           Text(
-                            currentLoans[index]['accountNo'].toString(),
+                            account['accountId'] ?? 'N/A',
                             style: semibold14Grey94,
                             overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
                           )
                         ],
                       ),
                     ),
                     Text(
-                      "\$${currentLoans[index]['amount']}",
+                      BankAccountsService.formatBalance(balance),
                       style: bold16Primary,
                     )
                   ],
                 ),
               ),
               dottedLine(),
-              // The entire Padding with period, rate, and EMI text labels has been removed
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: fixPadding * 2,
+                  vertical: fixPadding,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: infoWidget(
+                        'Opening Date',
+                        openingDate,
+                      ),
+                    ),
+                    Expanded(
+                        child: Align(
+                      alignment: Alignment.center,
+                      child: infoWidget(
+                        'Interest Rate',
+                        "$interestRate% p.a.",
+                      ),
+                    )),
+                    Expanded(
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: infoWidget(
+                          'Account Type',
+                          'Savings',
+                        ),
+                      ),
+                    )
+                  ],
+                ),
+              ),
               GestureDetector(
                 onTap: () {
-                  Navigator.pushNamed(context, '/depositStatement');
+                  if (savingsAccounts.isNotEmpty) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => DepositStatementScreen(
+                          phoneNumber: widget.phoneNumber ?? '9519874704',
+                          accountId: account['accountId'],
+                          accountType: 'savings',
+                        ),
+                      ),
+                    );
+                  }
                 },
                 child: Container(
                   width: double.maxFinite,
@@ -151,7 +285,7 @@ class _DepositScreenState extends State<DepositScreen> {
           ),
         );
       },
-      itemCount: currentLoans.length,
+      itemCount: savingsAccounts.length,
     );
   }
 
@@ -163,15 +297,20 @@ class _DepositScreenState extends State<DepositScreen> {
           title,
           style: semibold14Grey94,
           overflow: TextOverflow.ellipsis,
+          maxLines: 1,
         ),
+        const SizedBox(height: 4),
         Text(
           detail,
           style: semibold16Black33,
           overflow: TextOverflow.ellipsis,
+          maxLines: 1,
         )
       ],
     );
   }
+
+
 
   dottedLine() {
     return DottedBorder(
@@ -200,4 +339,3 @@ class ImageClipper extends CustomClipper<Path> {
     return false;
   }
 }
-

@@ -124,7 +124,7 @@ class _TransferSuccessScreenState extends State<TransferSuccessScreen> {
                     detailInfoWidget(
                         getTranslation(context, 'success.remark'), "Rent"),
                     detailInfoWidget(
-                        getTranslation(context, 'success.amount'), "\$1000.00"),
+                        getTranslation(context, 'success.amount'), "₹1000.00"),
                     detailInfoWidget(
                         getTranslation(context, 'success.payment_mode'), "IMPS")
                   ],

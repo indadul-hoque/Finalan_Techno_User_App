@@ -79,7 +79,7 @@ class _LoanStatementScreenState extends State<LoanStatementScreen> {
                           ),
                         ),
                         Text(
-                          "-\$${recentTransactionList[index]['amount']}",
+                          "-\₹${recentTransactionList[index]['amount']}",
                           style: bold15Red,
                         ),
                       ],
@@ -162,7 +162,7 @@ class _LoanStatementScreenState extends State<LoanStatementScreen> {
                   ),
                 ),
                 const Text(
-                  "\$20000.00",
+                  "₹20000.00",
                   style: bold16Primary,
                 )
               ],
@@ -195,7 +195,7 @@ class _LoanStatementScreenState extends State<LoanStatementScreen> {
                     alignment: Alignment.centerRight,
                     child: infoWidget(
                       getTranslation(context, 'loan_statement.EMI'),
-                      "\$1000.00",
+                      "₹1000.00",
                     ),
                   ),
                 )

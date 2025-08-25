@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:fl_banking_app/localization/localization_const.dart';
 import 'package:fl_banking_app/pages/Account/account.dart';
 import 'package:fl_banking_app/pages/deposit/deposit.dart';
 import 'package:fl_banking_app/pages/home/home.dart';
@@ -48,35 +47,16 @@ class _BottomNavigationScreenState extends State<BottomNavigationScreen> {
   }
 
   Future<void> _fetchUserData() async {
-    // Replace with your actual user data API endpoint
-    final url = Uri.parse('YOUR_USER_DATA_API_ENDPOINT/${widget.phoneNumber}');
-    
-    try {
-      final response = await http.get(url);
-      if (response.statusCode == 200) {
-        setState(() {
-          userData = jsonDecode(response.body);
-          _isLoading = false;
-        });
-        print('User data fetched successfully: $userData');
-      } else {
-        print('Failed to load user data: ${response.statusCode}');
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      print('An error occurred while fetching user data: $e');
-      setState(() {
-        _isLoading = false;
-      });
-    }
+    // Skip user data fetching for now since we're using the accounts API directly
+    setState(() {
+      _isLoading = false;
+    });
   }
 
-  final pages = [
+  List<Widget> get pages => [
     const HomeScreen(),
-    const DepositScreen(),
-    const LoansScreen(),
+    DepositScreen(phoneNumber: widget.phoneNumber ?? '9519874704'),
+    LoansScreen(phoneNumber: widget.phoneNumber ?? '9519874704'),
     const AccountScreen(),
   ];
 
@@ -95,7 +75,7 @@ class _BottomNavigationScreenState extends State<BottomNavigationScreen> {
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
-        bool backStatus = onWillPop();
+        bool backStatus = _onWillPop();
         if (backStatus) {
           exit(0);
         }
@@ -126,7 +106,7 @@ class _BottomNavigationScreenState extends State<BottomNavigationScreen> {
             items: [
               BottomNavigationBarItem(
                   icon: const Icon(Icons.home_outlined),
-                  label: getTranslation(context, 'bottom_navigation.home')),
+                  label: 'Home'),
               BottomNavigationBarItem(
                   icon: Image.asset(
                     "assets/bottomNavigation/Glyph_ undefined.png",
@@ -142,7 +122,7 @@ class _BottomNavigationScreenState extends State<BottomNavigationScreen> {
                     color: primaryColor,
                     fit: BoxFit.cover,
                   ),
-                  label: getTranslation(context, 'bottom_navigation.deposit')),
+                  label: 'Deposit'),
               BottomNavigationBarItem(
                   icon: Image.asset(
                     "assets/bottomNavigation/money-16-regular.png",
@@ -158,10 +138,10 @@ class _BottomNavigationScreenState extends State<BottomNavigationScreen> {
                     color: primaryColor,
                     fit: BoxFit.cover,
                   ),
-                  label: getTranslation(context, 'bottom_navigation.loans')),
+                  label: 'Loans'),
               BottomNavigationBarItem(
                   icon: const Icon(Icons.person_outline),
-                  label: getTranslation(context, 'bottom_navigation.account'))
+                  label: 'Account')
             ],
           ),
         ),
@@ -169,7 +149,7 @@ class _BottomNavigationScreenState extends State<BottomNavigationScreen> {
     );
   }
 
-  onWillPop() {
+  bool _onWillPop() {
     DateTime now = DateTime.now();
     if (backPressTime == null ||
         now.difference(backPressTime!) >= const Duration(seconds: 2)) {
@@ -177,8 +157,8 @@ class _BottomNavigationScreenState extends State<BottomNavigationScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: blackColor,
-          content: Text(
-            getTranslation(context, 'exit_app.app_exit'),
+          content: const Text(
+            'Press back again to exit',
             style: snackBarStyle,
           ),
           behavior: SnackBarBehavior.floating,

@@ -198,11 +198,11 @@ class _StatementScreenState extends State<StatementScreen> {
               ),
               transactionlist[index]['isCredit'] == false
                   ? Text(
-                      "-\$${transactionlist[index]['money']}",
+                      "-\₹${transactionlist[index]['money']}",
                       style: bold15Red,
                     )
                   : Text(
-                      "+\$${transactionlist[index]['money']}",
+                      "+\₹${transactionlist[index]['money']}",
                       style: bold15Green,
                     )
             ],
@@ -442,7 +442,7 @@ class _StatementScreenState extends State<StatementScreen> {
               ),
               height5Space,
               const Text(
-                "\$1000.00",
+                "₹1000.00",
                 style: bold20Primary,
               )
             ],

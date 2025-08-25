@@ -1,8 +1,8 @@
 import 'package:fl_banking_app/localization/localization_const.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:fl_banking_app/services/kyc_service.dart';
 
 import '../../theme/theme.dart';
 
@@ -41,9 +41,8 @@ class AccountScreen extends StatelessWidget {
           userInfo(size, context),
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.symmetric(vertical: fixPadding),
-              physics: const BouncingScrollPhysics()
-            ),
+                padding: const EdgeInsets.symmetric(vertical: fixPadding),
+                physics: const BouncingScrollPhysics()),
           )
         ],
       ),
@@ -109,13 +108,13 @@ class AccountScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  "Leslie Alexander",
+                Text(
+                  KYCService.kycData?['name'] ?? "User Name",
                   style: bold16Black33,
                 ),
                 heightBox(3.0),
-                const Text(
-                  "+91 1234567890",
+                Text(
+                  KYCService.kycData?['phone'] ?? "+91 1234567890",
                   style: semibold14Grey94,
                 )
               ],

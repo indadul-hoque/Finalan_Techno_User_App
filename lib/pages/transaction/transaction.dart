@@ -171,11 +171,11 @@ class _TransactionScreenState extends State<TransactionScreen> {
               ),
               transactionlist[index]['isCredit'] == true
                   ? Text(
-                      "+\$${transactionlist[index]['money']}",
+                      "+\₹${transactionlist[index]['money']}",
                       style: bold15Green,
                     )
                   : Text(
-                      "-\$${transactionlist[index]['money']}",
+                      "-\₹${transactionlist[index]['money']}",
                       style: bold15Red,
                     )
             ],

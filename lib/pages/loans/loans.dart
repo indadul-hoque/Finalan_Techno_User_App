@@ -1,13 +1,18 @@
 import 'package:dotted_border/dotted_border.dart';
 import 'package:fl_banking_app/localization/localization_const.dart';
 import 'package:fl_banking_app/widget/column_builder.dart';
+import 'package:fl_banking_app/services/bank_accounts_service.dart';
+import 'package:fl_banking_app/services/statement_service.dart';
+import 'package:fl_banking_app/pages/loans/loan_statement_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../theme/theme.dart';
 
 class LoansScreen extends StatefulWidget {
-  const LoansScreen({Key? key}) : super(key: key);
+  final String? phoneNumber;
+  
+  const LoansScreen({Key? key, this.phoneNumber}) : super(key: key);
 
   @override
   State<LoansScreen> createState() => _LoansScreenState();
@@ -27,26 +32,48 @@ class _LoansScreenState extends State<LoansScreen> {
     },
   ];
 
-  final currentLoans = [
-    {
-      "icon": "assets/loan/home-database.png",
-      "name": "Home loan",
-      "accountNo": "1234 4567 8956 1222",
-      "amount": 20000.00,
-      "period": "24 month",
-      "Rate": "13%",
-      "EMI": 1000.00,
-    },
-    {
-      "icon": "assets/loan/car-outline.png",
-      "name": "Car loan",
-      "accountNo": "1234 4567 8956 1222",
-      "amount": 10000.00,
-      "period": "12 month",
-      "Rate": "10%",
-      "EMI": 1000.00,
-    },
-  ];
+  List<Map<String, dynamic>> currentLoans = [];
+  bool isLoading = true;
+  String? errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    final phoneNumber = widget.phoneNumber ?? '9519874704';
+    _fetchLoanAccounts(phoneNumber);
+  }
+
+  Future<void> _fetchLoanAccounts([String? phoneNumber]) async {
+    final phone = phoneNumber ?? widget.phoneNumber ?? '9519874704';
+    try {
+      setState(() {
+        isLoading = true;
+        errorMessage = null;
+      });
+
+      final accounts = await BankAccountsService.fetchBankAccounts(phone);
+      
+      if (accounts != null) {
+        final loanAccounts = BankAccountsService.getLoanAccounts();
+        setState(() {
+          currentLoans = loanAccounts;
+          isLoading = false;
+        });
+      } else {
+        setState(() {
+          isLoading = false;
+          errorMessage = BankAccountsService.errorMessage ?? 'Failed to fetch loan accounts';
+        });
+        BankAccountsService.showToast(errorMessage!, isError: true);
+      }
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+        errorMessage = 'An error occurred: $e';
+      });
+      BankAccountsService.showToast(errorMessage!, isError: true);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -74,25 +101,81 @@ class _LoansScreenState extends State<LoansScreen> {
           style: bold20White,
         ),
       ),
-      body: ListView(
-        physics: const BouncingScrollPhysics(),
-        padding: EdgeInsets.zero,
-        children: [
-          offerApplyListContent(size, context),
-          dottedLine(),
-          heightSpace,
-          heightSpace,
-          currentLoanTitle(),
-          currentLoansListContent(),
-          heightSpace,
-        ],
-      ),
+      body: isLoading 
+        ? const Center(child: CircularProgressIndicator())
+        : errorMessage != null
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    errorMessage!,
+                    style: bold16Black33,
+                    textAlign: TextAlign.center,
+                  ),
+                  heightSpace,
+                  ElevatedButton(
+                    onPressed: () => _fetchLoanAccounts(),
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            )
+          : ListView(
+              physics: const BouncingScrollPhysics(),
+              padding: EdgeInsets.zero,
+              children: [
+                offerApplyListContent(size, context),
+                dottedLine(),
+                heightSpace,
+                heightSpace,
+                currentLoanTitle(),
+                currentLoansListContent(),
+                heightSpace,
+
+              ],
+            ),
     );
   }
 
   currentLoansListContent() {
+    if (currentLoans.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(fixPadding * 2),
+          child: Column(
+            children: [
+              Icon(
+                Icons.account_balance_outlined,
+                size: 64,
+                color: grey94Color,
+              ),
+              heightSpace,
+              Text(
+                'No loan accounts found',
+                style: bold16Black33,
+                textAlign: TextAlign.center,
+              ),
+              Text(
+                'You don\'t have any active loan accounts',
+                style: semibold14Grey94,
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return ColumnBuilder(
       itemBuilder: (context, index) {
+        final loan = currentLoans[index];
+        final planDetails = loan['planDetails'] ?? {};
+        final emiAmount = loan['emiAmount'] ?? 0.0;
+        final loanAmount = loan['loanAmount'] ?? 0.0;
+        final loanTerm = loan['loanTerm'] ?? 0;
+        final interestRate = planDetails['interestRate'] ?? '0';
+        
         return Container(
           margin: const EdgeInsets.symmetric(
               vertical: fixPadding, horizontal: fixPadding * 2),
@@ -121,7 +204,7 @@ class _LoansScreenState extends State<LoansScreen> {
                         color: Color(0xFfEDEBEB),
                       ),
                       child: Image.asset(
-                        currentLoans[index]['icon'].toString(),
+                        "assets/loan/home-database.png",
                       ),
                     ),
                     widthSpace,
@@ -131,20 +214,23 @@ class _LoansScreenState extends State<LoansScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            currentLoans[index]['name'].toString(),
+                            planDetails['name'] ?? 'Loan Account',
                             style: bold16Black33,
                             overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
                           ),
+                          const SizedBox(height: 2),
                           Text(
-                            currentLoans[index]['accountNo'].toString(),
+                            loan['account'] ?? 'N/A',
                             style: semibold14Grey94,
                             overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
                           )
                         ],
                       ),
                     ),
                     Text(
-                      "\$${currentLoans[index]['amount']}",
+                      BankAccountsService.formatBalance(loanAmount),
                       style: bold16Primary,
                     )
                   ],
@@ -161,7 +247,7 @@ class _LoansScreenState extends State<LoansScreen> {
                     Expanded(
                       child: infoWidget(
                         getTranslation(context, 'loans.period'),
-                        currentLoans[index]['period'].toString(),
+                        "$loanTerm months",
                       ),
                     ),
                     Expanded(
@@ -169,7 +255,7 @@ class _LoansScreenState extends State<LoansScreen> {
                       alignment: Alignment.center,
                       child: infoWidget(
                         getTranslation(context, 'loans.rate'),
-                        "${currentLoans[index]['Rate']} ${getTranslation(context, 'loans.rate_text')}",
+                        "$interestRate% ${getTranslation(context, 'loans.rate_text')}",
                       ),
                     )),
                     Expanded(
@@ -177,7 +263,7 @@ class _LoansScreenState extends State<LoansScreen> {
                         alignment: Alignment.centerRight,
                         child: infoWidget(
                           getTranslation(context, 'loans.EMI'),
-                          "\$${currentLoans[index]['EMI']}",
+                          BankAccountsService.formatBalance(emiAmount),
                         ),
                       ),
                     )
@@ -186,7 +272,16 @@ class _LoansScreenState extends State<LoansScreen> {
               ),
               GestureDetector(
                 onTap: () {
-                  Navigator.pushNamed(context, '/loanStatement');
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => LoanStatementScreen(
+                        phoneNumber: widget.phoneNumber ?? '9519874704',
+                        accountId: loan['accountId'],
+                        accountType: 'loan',
+                      ),
+                    ),
+                  );
                 },
                 child: Container(
                   width: double.maxFinite,
@@ -220,15 +315,20 @@ class _LoansScreenState extends State<LoansScreen> {
           title,
           style: semibold14Grey94,
           overflow: TextOverflow.ellipsis,
+          maxLines: 1,
         ),
+        const SizedBox(height: 4),
         Text(
           detail,
           style: semibold16Black33,
           overflow: TextOverflow.ellipsis,
+          maxLines: 1,
         )
       ],
     );
   }
+
+
 
   currentLoanTitle() {
     return Padding(

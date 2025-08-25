@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_banking_app/services/auth_service.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class BiometricGate extends StatefulWidget {
   const BiometricGate({Key? key}) : super(key: key);
@@ -12,10 +13,19 @@ class BiometricGate extends StatefulWidget {
 class _BiometricGateState extends State<BiometricGate> {
   final AuthService _authService = AuthService();
   bool _isAuthenticating = true;
+  String? _phoneNumber;
 
   @override
   void initState() {
     super.initState();
+    _loadPhoneNumber();
+  }
+
+  Future<void> _loadPhoneNumber() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _phoneNumber = prefs.getString('phoneNumber');
+    });
     _checkBiometrics();
   }
 
@@ -41,6 +51,7 @@ class _BiometricGateState extends State<BiometricGate> {
           context,
           '/bottomNavigation',
           (route) => false,
+          arguments: _phoneNumber,
         );
       } else {
         setState(() {
@@ -52,6 +63,7 @@ class _BiometricGateState extends State<BiometricGate> {
         context,
         '/bottomNavigation',
         (route) => false,
+        arguments: _phoneNumber,
       );
     }
   }

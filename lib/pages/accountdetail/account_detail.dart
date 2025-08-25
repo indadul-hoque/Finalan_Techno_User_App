@@ -1,6 +1,11 @@
 import 'package:fl_banking_app/localization/localization_const.dart';
 import 'package:fl_banking_app/widget/column_builder.dart';
+import 'package:fl_banking_app/services/kyc_service.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:fl_banking_app/services/bank_accounts_service.dart';
+import 'dart:convert';
 
 import '../../theme/theme.dart';
 
@@ -13,6 +18,7 @@ class AccountDetailScreen extends StatefulWidget {
 
 class _AccountDetailScreenState extends State<AccountDetailScreen> {
   String? accountType;
+  Map<String, dynamic>? savingsAccountData;
 
   final bankAccount = [
     {"name": translation('account_detail.current_account'), "id": 0},
@@ -23,10 +29,40 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
 
   @override
   void initState() {
+    super.initState();
     setState(() {
       accountType = bankAccount[1]['name'].toString();
     });
-    super.initState();
+    _fetchAccountData();
+  }
+
+  Future<void> _fetchAccountData() async {
+    // Load saved phone number; fallback to API test number
+    final prefs = await SharedPreferences.getInstance();
+    final phone = prefs.getString('phoneNumber') ?? '9519874704';
+
+    final response = await http
+        .get(Uri.parse('https://api.cornix.tech/user/$phone/accounts'));
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> responseData = json.decode(response.body);
+      print("\n\n\n$responseData\n\n\n");
+      final List<dynamic> accountsList = responseData['accounts'];
+
+      final savingsAccount = accountsList.firstWhere(
+        (account) => account['accountType'] == 'savings',
+        orElse: () => null,
+      );
+
+      if (savingsAccount != null) {
+        setState(() {
+          savingsAccountData = Map<String, dynamic>.from(savingsAccount);
+        });
+      }
+    } else {
+      // Handle error
+      print('\n\n\nFailed to load account data\n\n\n');
+    }
   }
 
   @override
@@ -49,43 +85,52 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
           style: appBarStyle,
         ),
       ),
-      body: ListView(
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.all(fixPadding * 2),
-        children: [
-          bankAccountType(context),
-          heightSpace,
-          heightSpace,
-          totalbalanceinfo(),
-          heightSpace,
-          heightSpace,
-          accountDetailTitle(),
-          heightSpace,
-          detailTile(
-              getTranslation(context, 'account_detail.CIF'), "12345678921"),
-          heightSpace,
-          detailTile(
-              getTranslation(context, 'account_detail.IFSC'), "SMART000S600"),
-          heightSpace,
-          detailTile(
-              getTranslation(context, 'account_detail.branch_code'), "1235"),
-          heightSpace,
-          detailTile(getTranslation(context, 'account_detail.branch_name'),
-              "Andheri, Mumbai"),
-          heightSpace,
-          detailTile(
-              getTranslation(context, 'account_detail.account_opening_date'),
-              "10/12/2020"),
-          heightSpace,
-          detailTile(getTranslation(context, 'account_detail.MMId'), "120546"),
-          heightSpace,
-          heightSpace,
-          heightSpace,
-          heightSpace,
-          heightSpace,
-          viewStatementButton(context)
-        ],
-      ),
+      body: savingsAccountData == null
+          ? const Center(child: CircularProgressIndicator())
+          : ListView(
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.all(fixPadding * 2),
+              children: [
+                bankAccountType(context),
+                heightSpace,
+                heightSpace,
+                totalbalanceinfo(),
+                heightSpace,
+                heightSpace,
+                accountDetailTitle(),
+                heightSpace,
+                // Note: The API response does not contain CIF, IFSC, branch code, etc.
+                // You will need to map the existing data to these fields or use placeholders.
+                // This example uses static values for those fields as they are not present.
+                detailTile(
+                    getTranslation(context, 'account_detail.CIF'), "N/A"),
+                heightSpace,
+                detailTile(
+                    getTranslation(context, 'account_detail.IFSC'), "N/A"),
+                heightSpace,
+                detailTile(
+                    getTranslation(context, 'account_detail.branch_code'),
+                    "N/A"),
+                heightSpace,
+                detailTile(
+                    getTranslation(context, 'account_detail.branch_name'),
+                    "N/A"),
+                heightSpace,
+                detailTile(
+                    getTranslation(
+                        context, 'account_detail.account_opening_date'),
+                    savingsAccountData!['openingDate'].toString()),
+                heightSpace,
+                detailTile(
+                    getTranslation(context, 'account_detail.MMId'), "N/A"),
+                heightSpace,
+                heightSpace,
+                heightSpace,
+                heightSpace,
+                heightSpace,
+                viewStatementButton(context)
+              ],
+            ),
     );
   }
 
@@ -162,8 +207,8 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  "Leslie Alexander",
+                Text(
+                  "User Name",
                   style: bold16Black33,
                 ),
                 heightSpace,
@@ -171,8 +216,8 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
                   getTranslation(context, 'account_detail.account_number'),
                   style: semibold14Grey94,
                 ),
-                const Text(
-                  "SB-******1234",
+                 Text(
+                  savingsAccountData?['accountId']?.toString() ?? "N/A",
                   style: semibold15Black33,
                 )
               ],
@@ -186,8 +231,12 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
                 style: bold14Grey94,
               ),
               height5Space,
-              const Text(
-                "\$1000.00",
+              Text(
+                BankAccountsService.formatBalance(
+                  (savingsAccountData?['balance'] ?? 0.0) is num
+                      ? (savingsAccountData?['balance'] ?? 0.0)
+                      : 0.0,
+                ),
                 style: bold20Primary,
               )
             ],

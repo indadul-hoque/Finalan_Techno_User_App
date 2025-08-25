@@ -73,7 +73,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
       itemBuilder: (context, index) {
         return GestureDetector(
           onTap: () {
-            final routeName = servicelist[index]['routeName'] as String?;
+            final routeName = servicelist[index]['routeName'];
             if (routeName != null) {
               Navigator.pushNamed(context, routeName);
             }
@@ -114,4 +114,3 @@ class _ServicesScreenState extends State<ServicesScreen> {
     );
   }
 }
-

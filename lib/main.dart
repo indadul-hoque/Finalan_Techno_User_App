@@ -7,11 +7,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:fl_banking_app/pages/screens.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'pages/auth/login.dart';
-import 'pages/bottomNavigation.dart/bottom_navigation.dart';
 
-import 'package:local_auth/local_auth.dart';
-import 'package:fl_banking_app/services/auth_service.dart';
 import 'package:fl_banking_app/widgets/biometric_gate.dart';
 
 String? phoneNumber;
@@ -27,7 +23,8 @@ void main() async {
 class MyApp extends StatefulWidget {
   final bool isLoggedIn;
   final String? phoneNumber;
-  const MyApp({Key? key, required this.isLoggedIn, this.phoneNumber}) : super(key: key);
+  const MyApp({Key? key, required this.isLoggedIn, this.phoneNumber})
+      : super(key: key);
 
   static void setLocale(BuildContext context, Locale locale) {
     _MyAppState state = context.findAncestorStateOfType<_MyAppState>()!;
@@ -78,8 +75,8 @@ class _MyAppState extends State<MyApp> {
           fontFamily: 'NunitoSans',
           scaffoldBackgroundColor: scaffoldBgColor,
           inputDecorationTheme: InputDecorationTheme(
-            prefixIconColor: WidgetStateColor.resolveWith(
-              (states) => states.contains(WidgetState.focused)
+            prefixIconColor: MaterialStateColor.resolveWith(
+              (states) => states.contains(MaterialState.focused)
                   ? primaryColor
                   : grey94Color,
             ),
@@ -89,9 +86,11 @@ class _MyAppState extends State<MyApp> {
               surfaceTintColor: Colors.transparent,
               backgroundColor: scaffoldBgColor),
         ),
-	home: (widget.phoneNumber == null || widget.phoneNumber!.isEmpty || !widget.isLoggedIn)
-	    ? const SplashScreen()
-	    : const BiometricGate(),
+        home: (widget.phoneNumber == null ||
+                widget.phoneNumber!.isEmpty ||
+                !widget.isLoggedIn)
+            ? const SplashScreen()
+            : const BiometricGate(),
         onGenerateRoute: routes,
         locale: _locale,
         supportedLocales: const [
@@ -125,7 +124,7 @@ class _MyAppState extends State<MyApp> {
         return PageTransition(
           child: (phoneNumber == null || phoneNumber!.isEmpty)
               ? const SplashScreen()
-              : const BottomNavigationScreen(),
+              : BottomNavigationScreen(phoneNumber: phoneNumber),
           type: PageTransitionType.fade,
           settings: settings,
         );
@@ -147,8 +146,6 @@ class _MyAppState extends State<MyApp> {
           type: PageTransitionType.rightToLeft,
           settings: settings,
         );
-      // The phoneNumber will now be passed through the constructor.
-      // This route will need to be updated to pass the phoneNumber.
       case '/bottomNavigation':
         final args = settings.arguments as String?;
         return PageTransition(
@@ -233,5 +230,3 @@ class _MyAppState extends State<MyApp> {
     }
   }
 }
-
-
