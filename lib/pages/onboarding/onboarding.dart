@@ -48,10 +48,10 @@ class OnboardingScreenState extends State<OnboardingScreen> {
               ),
             ),
             height5Space,
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: fixPadding * 2),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: fixPadding * 2),
               child: Text(
-                "Lorem ipsum dolor sit amet consectetur. Viverra impretium elementum morbi. Quis id placerat tempor element Aliquet sit consequat quis tellus.",
+                "Experience banking like never before with our secure, lightning-fast platform. Your financial safety is our top priority.",
                 textAlign: TextAlign.center,
                 style: semibold14Grey94,
               ),
@@ -86,10 +86,10 @@ class OnboardingScreenState extends State<OnboardingScreen> {
               ),
             ),
             height5Space,
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: fixPadding * 2),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: fixPadding * 2),
               child: Text(
-                "Lorem ipsum dolor sit amet consectetur. Viverra impretium elementum morbi. Quis id placerat tempor element Aliquet sit consequat quis tellus.",
+                "Take control of your finances with smart tools and insights. Track spending, save smarter, and grow your wealth effortlessly.",
                 textAlign: TextAlign.center,
                 style: semibold14Grey94,
               ),
@@ -124,10 +124,10 @@ class OnboardingScreenState extends State<OnboardingScreen> {
               ),
             ),
             height5Space,
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: fixPadding * 2),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: fixPadding * 2),
               child: Text(
-                "Lorem ipsum dolor sit amet consectetur. Viverra impretium elementum morbi. Quis id placerat tempor element Aliquet sit consequat quis tellus.",
+                "Never worry about finding banking services again. Locate ATMs, branches, and financial centers instantly with our smart location services.",
                 textAlign: TextAlign.center,
                 style: semibold14Grey94,
               ),

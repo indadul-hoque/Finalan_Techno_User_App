@@ -33,13 +33,9 @@ class _LoginScreenState extends State<LoginScreen> {
       _showToast('Please enter your phone number.');
       return;
     }
-
-    // Show a loading indicator
     setState(() {
       _isLoading = true;
     });
-
-    // Replace with your actual API endpoint URL
     final url = Uri.parse('https://api.cornix.tech/login');
 
     try {
@@ -54,35 +50,23 @@ class _LoginScreenState extends State<LoginScreen> {
         // API call was successful
         final responseData = jsonDecode(response.body);
         print('Login successful: $responseData');
-
-        // Show a success toast message
         _showToast('OTP sent successfully!');
 
         // Navigate to the OTP screen, passing the phone number for verification
         Navigator.pushNamed(context, '/otp', arguments: phoneNumber);
       } else {
-        // API call failed
-        print('Login failed: ${response.statusCode}');
-        print('Response body: ${response.body}');
-
-        // Show a failure toast message
-        _showToast('Login failed. Please try again.');
+        _showToast('Sign Up first to use the Application!');
       }
     } catch (e) {
-      // An error occurred during the API call
       print('An error occurred: $e');
-
-      // Show a general error message
       _showToast('An error occurred. Check your connection.');
     } finally {
-      // Hide the loading indicator
       setState(() {
         _isLoading = false;
       });
     }
   }
 
-  // Function to show a toast message
   void _showToast(String message) {
     Fluttertoast.showToast(
       msg: message,
