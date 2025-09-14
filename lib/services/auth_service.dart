@@ -13,15 +13,15 @@ class AuthService {
   }
 
   Future<void> debugToast(String message, BuildContext context) async {
-  Fluttertoast.showToast(
-    msg: message,
-    toastLength: Toast.LENGTH_LONG,
-    gravity: ToastGravity.TOP,
-    backgroundColor: Colors.blue,
-    textColor: Colors.white,
-  );
-  debugPrint('AUTH_DEBUG: $message'); 
-}
+    Fluttertoast.showToast(
+      msg: message,
+      toastLength: Toast.LENGTH_LONG,
+      gravity: ToastGravity.TOP,
+      backgroundColor: Colors.blue,
+      textColor: Colors.white,
+    );
+    debugPrint('AUTH_DEBUG: $message');
+  }
 
   Future<void> setBiometricEnabled(bool enabled) async {
     final prefs = await SharedPreferences.getInstance();
@@ -49,7 +49,7 @@ class AuthService {
       return await _localAuth.authenticate(
         localizedReason: 'Authenticate to access your financial account',
         options: const AuthenticationOptions(
-          biometricOnly: true,
+          biometricOnly: false,
           useErrorDialogs: true,
           stickyAuth: true,
         ),

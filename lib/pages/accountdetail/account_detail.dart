@@ -1,327 +1,301 @@
-import 'package:fl_banking_app/localization/localization_const.dart';
-import 'package:fl_banking_app/widget/column_builder.dart';
-import 'package:fl_banking_app/services/kyc_service.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fl_banking_app/services/bank_accounts_service.dart';
-import 'dart:convert';
-
-import '../../theme/theme.dart';
+import 'package:fl_banking_app/services/kyc_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AccountDetailScreen extends StatefulWidget {
-  const AccountDetailScreen({Key? key}) : super(key: key);
+  final String selectedType;
+  final Map<String, dynamic>? savingsAccountData;
+
+  const AccountDetailScreen({
+    Key? key,
+    this.selectedType = 'savings',
+    this.savingsAccountData,
+  }) : super(key: key);
 
   @override
   State<AccountDetailScreen> createState() => _AccountDetailScreenState();
 }
 
 class _AccountDetailScreenState extends State<AccountDetailScreen> {
-  String? accountType;
-  Map<String, dynamic>? savingsAccountData;
-
-  final bankAccount = [
-    {"name": translation('account_detail.current_account'), "id": 0},
-    {"name": translation('account_detail.saving_account'), "id": 1},
-    {"name": translation('account_detail.salary_account'), "id": 2},
-    {"name": translation('account_detail.NRI_account'), "id": 3},
-  ];
+  Map<String, dynamic>? accountData;
+  List<Map<String, dynamic>> _allAccounts = [];
+  bool _isLoading = true;
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    setState(() {
-      accountType = bankAccount[1]['name'].toString();
-    });
-    _fetchAccountData();
+    accountData = widget.savingsAccountData;
+    _loadData();
   }
 
-  Future<void> _fetchAccountData() async {
-    // Load saved phone number; fallback to API test number
-    final prefs = await SharedPreferences.getInstance();
-    final phone = prefs.getString('phoneNumber') ?? '9519874704';
+  Future<void> _loadData() async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
 
-    final response = await http
-        .get(Uri.parse('https://api.cornix.tech/user/$phone/accounts'));
+      final prefs = await SharedPreferences.getInstance();
+      final phone = prefs.getString('phoneNumber') ?? '9519874704';
 
-    if (response.statusCode == 200) {
-      final Map<String, dynamic> responseData = json.decode(response.body);
-      print("\n\n\n$responseData\n\n\n");
-      final List<dynamic> accountsList = responseData['accounts'];
+      // Fetch KYC for holder name
+      await KYCService.fetchKYCDetails(phone);
 
-      final savingsAccount = accountsList.firstWhere(
-        (account) => account['accountType'] == 'savings',
-        orElse: () => null,
-      );
-
-      if (savingsAccount != null) {
+      // Fetch accounts
+      final list = await BankAccountsService.fetchBankAccounts(phone);
+      if (list == null || list.isEmpty) {
         setState(() {
-          savingsAccountData = Map<String, dynamic>.from(savingsAccount);
+          _errorMessage =
+              BankAccountsService.errorMessage ?? 'No accounts found';
+          _isLoading = false;
         });
+        return;
       }
-    } else {
-      // Handle error
-      print('\n\n\nFailed to load account data\n\n\n');
+
+      setState(() {
+        _allAccounts = List<Map<String, dynamic>>.from(list);
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Failed to load account details';
+        _isLoading = false;
+      });
     }
+  }
+
+  Widget detailTile(String title, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: 3,
+            child: Text(
+              title,
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.grey.shade700,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.2,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            flex: 5,
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 14.5,
+                color: Colors.black,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        centerTitle: false,
-        shadowColor: blackColor.withValues(alpha: 0.4),
-        backgroundColor: scaffoldBgColor,
-        foregroundColor: black33Color,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
-        titleSpacing: 0,
-        title: Text(
-          getTranslation(context, 'account_detail.account'),
-          style: appBarStyle,
-        ),
-      ),
-      body: savingsAccountData == null
-          ? const Center(child: CircularProgressIndicator())
-          : ListView(
-              physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.all(fixPadding * 2),
-              children: [
-                bankAccountType(context),
-                heightSpace,
-                heightSpace,
-                totalbalanceinfo(),
-                heightSpace,
-                heightSpace,
-                accountDetailTitle(),
-                heightSpace,
-                // Note: The API response does not contain CIF, IFSC, branch code, etc.
-                // You will need to map the existing data to these fields or use placeholders.
-                // This example uses static values for those fields as they are not present.
-                detailTile(
-                    getTranslation(context, 'account_detail.CIF'), "N/A"),
-                heightSpace,
-                detailTile(
-                    getTranslation(context, 'account_detail.IFSC'), "N/A"),
-                heightSpace,
-                detailTile(
-                    getTranslation(context, 'account_detail.branch_code'),
-                    "N/A"),
-                heightSpace,
-                detailTile(
-                    getTranslation(context, 'account_detail.branch_name'),
-                    "N/A"),
-                heightSpace,
-                detailTile(
-                    getTranslation(
-                        context, 'account_detail.account_opening_date'),
-                    savingsAccountData!['openingDate'].toString()),
-                heightSpace,
-                detailTile(
-                    getTranslation(context, 'account_detail.MMId'), "N/A"),
-                heightSpace,
-                heightSpace,
-                heightSpace,
-                heightSpace,
-                heightSpace,
-                viewStatementButton(context)
-              ],
-            ),
-    );
-  }
-
-  viewStatementButton(BuildContext context) {
-    return InkWell(
-      onTap: () {
-        Navigator.pushNamed(context, '/statement');
-      },
-      child: Container(
-        width: double.maxFinite,
-        padding: const EdgeInsets.symmetric(vertical: fixPadding * 1.5),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(10.0),
-          color: primaryColor,
-          boxShadow: [
-            BoxShadow(
-              color: primaryColor.withValues(alpha: 0.1),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
-            )
+    if (_isLoading) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(
+            "Account Details",
+            style: Theme.of(context)
+                .textTheme
+                .titleLarge
+                ?.copyWith(fontWeight: FontWeight.w800),
+          ),
+          actions: [
+            IconButton(onPressed: _loadData, icon: const Icon(Icons.refresh)),
           ],
         ),
-        alignment: Alignment.center,
-        child: Text(
-          getTranslation(context, 'account_detail.view_statement'),
-          style: bold18White,
-        ),
-      ),
-    );
-  }
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
 
-  detailTile(String title, String detail) {
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            title,
-            style: semibold15Grey94,
+    if (_allAccounts.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(
+            'Account Details',
+            style: Theme.of(context)
+                .textTheme
+                .titleLarge
+                ?.copyWith(fontWeight: FontWeight.w800),
           ),
         ),
-        widthSpace,
-        Text(
-          detail,
-          style: semibold15Black33,
-        )
-      ],
-    );
-  }
+        body: Center(
+          child: Text(_errorMessage ?? 'No data'),
+        ),
+      );
+    }
 
-  accountDetailTitle() {
-    return Text(
-      getTranslation(context, 'account_detail.account_details'),
-      style: bold18Black33,
-    );
-  }
-
-  totalbalanceinfo() {
-    return Container(
-      width: double.maxFinite,
-      padding: const EdgeInsets.all(fixPadding * 1.5),
-      decoration: BoxDecoration(
-        color: whiteColor,
-        borderRadius: BorderRadius.circular(10.0),
-        boxShadow: [
-          BoxShadow(
-            color: blackColor.withValues(alpha: 0.25),
-            blurRadius: 6,
-          ),
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          "Account Details",
+          style: Theme.of(context)
+              .textTheme
+              .titleLarge
+              ?.copyWith(fontWeight: FontWeight.w800),
+        ),
+        actions: [
+          IconButton(onPressed: _loadData, icon: const Icon(Icons.refresh)),
         ],
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "User Name",
-                  style: bold16Black33,
-                ),
-                heightSpace,
-                Text(
-                  getTranslation(context, 'account_detail.account_number'),
-                  style: semibold14Grey94,
-                ),
-                 Text(
-                  savingsAccountData?['accountId']?.toString() ?? "N/A",
-                  style: semibold15Black33,
-                )
-              ],
-            ),
-          ),
-          Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                getTranslation(context, 'account_detail.total_balance'),
-                style: bold14Grey94,
-              ),
-              height5Space,
-              Text(
-                BankAccountsService.formatBalance(
-                  (savingsAccountData?['balance'] ?? 0.0) is num
-                      ? (savingsAccountData?['balance'] ?? 0.0)
-                      : 0.0,
-                ),
-                style: bold20Primary,
-              )
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+      body: RefreshIndicator(
+        onRefresh: _loadData,
+        child: ListView.builder(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(16),
+          itemCount: _allAccounts.length,
+          itemBuilder: (context, index) {
+            final item = _allAccounts[index];
+            final type = (item['accountType'] ?? '').toString();
+            final displayType = BankAccountsService.formatAccountType(type);
+            final num balanceValue =
+                ((item['balance'] ?? item['remainingBalance'] ?? 0) as num);
+            final isClosed = item['closed'] == true;
+            final statusText = isClosed ? 'Closed' : 'Active';
+            final statusColor =
+                isClosed ? Colors.red.shade50 : Colors.green.shade50;
+            final statusLabelColor =
+                isClosed ? Colors.red.shade700 : Colors.green.shade700;
+            final typeColor = Colors.blue.shade50;
+            final typeLabelColor = Colors.blue.shade700;
 
-  bankAccountType(BuildContext context) {
-    return Center(
-      child: GestureDetector(
-        onTap: () {
-          showModalBottomSheet(
-            context: context,
-            isScrollControlled: true,
-            backgroundColor: Colors.transparent,
-            builder: (context) {
-              return Container(
-                width: double.maxFinite,
-                decoration: const BoxDecoration(
-                  color: whiteColor,
-                  borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(20),
-                  ),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: fixPadding),
-                child: ColumnBuilder(
-                    mainAxisSize: MainAxisSize.min,
-                    itemBuilder: (context, index) {
-                      return Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          ListTile(
-                            onTap: () {
-                              setState(() {
-                                accountType =
-                                    bankAccount[index]['name'].toString();
-                              });
-                              Navigator.pop(context);
-                            },
-                            title: Text(
-                              bankAccount[index]['name'].toString(),
-                              style: bold16Black33,
-                            ),
+            return Card(
+              clipBehavior: Clip.antiAlias,
+              margin: const EdgeInsets.only(bottom: 14),
+              elevation: 3,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 12),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Colors.grey.shade100, Colors.white],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          height: 36,
+                          width: 36,
+                          decoration: BoxDecoration(
+                            color: Colors.blue.shade600,
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                          bankAccount.length - 1 == index
-                              ? const SizedBox()
-                              : Container(
-                                  color: greyD9Color,
-                                  height: 1,
-                                  width: double.maxFinite,
-                                )
-                        ],
-                      );
-                    },
-                    itemCount: bankAccount.length),
-              );
-            },
-          );
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(
-            vertical: fixPadding / 1.5,
-            horizontal: fixPadding * 1.5,
-          ),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(5),
-            color: whiteColor,
-            border: Border.all(color: primaryColor),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                accountType.toString(),
-                style: bold16Primary,
+                          child: const Icon(Icons.account_balance_wallet,
+                              color: Colors.white, size: 20),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                (item['accountId'] ?? item['account'] ?? '—')
+                                    .toString(),
+                                style: const TextStyle(
+                                    fontSize: 16, fontWeight: FontWeight.w700),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                BankAccountsService.formatBalance(
+                                    balanceValue.toDouble()),
+                                style: TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.grey.shade700,
+                                    fontWeight: FontWeight.w600),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Wrap(
+                          spacing: 8,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: typeColor,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                displayType,
+                                style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: typeLabelColor),
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: statusColor,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                statusText,
+                                style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: statusLabelColor),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const Divider(height: 1),
+
+                  // Body rows
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(14, 12, 14, 4),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        detailTile(
+                            'Account number or id',
+                            (item['accountId'] ?? item['account'] ?? '—')
+                                .toString()),
+                        detailTile('Holder name',
+                            (KYCService.kycData?['name'] ?? '—').toString()),
+                        detailTile(
+                            'Balance',
+                            BankAccountsService.formatBalance(
+                                balanceValue.toDouble())),
+                        detailTile('Status', statusText),
+                        detailTile('Type', displayType),
+                        const SizedBox(height: 6),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-              widthSpace,
-              const Icon(
-                Icons.keyboard_arrow_down_rounded,
-                color: primaryColor,
-              )
-            ],
-          ),
+            );
+          },
         ),
       ),
     );

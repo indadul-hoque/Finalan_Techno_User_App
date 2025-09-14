@@ -41,10 +41,12 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final response = await http.post(
         url,
-        headers: {
-        'Content-Type': 'application/json'},
+        headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'phone_number': phoneNumber}),
       );
+      print("\n\n\n\n");
+      print(response.body);
+      print("\n\n\n\n");
 
       if (response.statusCode == 200) {
         // API call was successful
@@ -359,4 +361,3 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 }
-

@@ -216,7 +216,6 @@ class _EditProfileState extends State<EditProfile> {
                 heightSpace,
                 heightSpace,
                 heightSpace,
-                updateButton(context),
               ],
             ),
     );

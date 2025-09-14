@@ -5,18 +5,19 @@ import 'package:flutter/material.dart';
 
 class BankAccountsService {
   static const String baseUrl = 'https://api.cornix.tech';
-  
+
   // Bank Accounts Model
   static List<Map<String, dynamic>>? accounts;
   static bool isLoading = false;
   static String? errorMessage;
 
   // Fetch bank accounts for a user
-  static Future<List<Map<String, dynamic>>?> fetchBankAccounts(String phoneNumber) async {
+  static Future<List<Map<String, dynamic>>?> fetchBankAccounts(
+      String phoneNumber) async {
     try {
       isLoading = true;
       errorMessage = null;
-      
+
       final response = await http.get(
         Uri.parse('$baseUrl/user/$phoneNumber/accounts'),
         headers: {
@@ -48,7 +49,7 @@ class BankAccountsService {
   // Get total balance across all accounts
   static double getTotalBalance() {
     if (accounts == null || accounts!.isEmpty) return 0.0;
-    
+
     double total = 0.0;
     for (var account in accounts!) {
       if (account['accountType'] == 'savings') {
@@ -61,23 +62,33 @@ class BankAccountsService {
   // Get savings accounts
   static List<Map<String, dynamic>> getSavingsAccounts() {
     if (accounts == null || accounts!.isEmpty) return [];
-    
-    return accounts!.where((account) => account['accountType'] == 'savings').toList();
+
+    return accounts!
+        .where((account) => [
+              'savings',
+              'daily-savings',
+              'thrift-fund',
+              'fixed-deposit'
+            ].contains((account['accountType'] ?? '').toString().toLowerCase()))
+        .toList();
   }
 
   // Get loan accounts
   static List<Map<String, dynamic>> getLoanAccounts() {
     if (accounts == null || accounts!.isEmpty) return [];
-    
-    return accounts!.where((account) => account['accountType'] == 'loan').toList();
+
+    return accounts!
+        .where((account) => account['accountType'] == 'loan')
+        .toList();
   }
 
   // Get account by ID
   static Map<String, dynamic>? getAccountById(String accountId) {
     if (accounts == null || accounts!.isEmpty) return null;
-    
+
     try {
-      return accounts!.firstWhere((account) => account['accountId'] == accountId);
+      return accounts!
+          .firstWhere((account) => account['accountId'] == accountId);
     } catch (e) {
       return null;
     }
@@ -99,6 +110,12 @@ class BankAccountsService {
     switch (accountType.toLowerCase()) {
       case 'savings':
         return 'Savings Account';
+      case 'daily-savings':
+        return 'Daily Savings';
+      case 'fixed-deposit':
+        return 'Fixed Deposit';
+      case 'thrift-fund':
+        return 'Thrift Fund';
       case 'loan':
         return 'Loan Account';
       case 'current':

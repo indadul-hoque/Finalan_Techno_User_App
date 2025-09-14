@@ -5,18 +5,19 @@ import 'package:flutter/material.dart';
 
 class KYCService {
   static const String baseUrl = 'https://api.cornix.tech';
-  
+
   // KYC Model
   static Map<String, dynamic>? kycData;
   static bool isLoading = false;
   static String? errorMessage;
 
   // Fetch KYC details for a user
-  static Future<Map<String, dynamic>?> fetchKYCDetails(String phoneNumber) async {
+  static Future<Map<String, dynamic>?> fetchKYCDetails(
+      String phoneNumber) async {
     try {
       isLoading = true;
       errorMessage = null;
-      
+
       final response = await http.get(
         Uri.parse('$baseUrl/user/$phoneNumber/kyc'),
         headers: {
@@ -46,11 +47,12 @@ class KYCService {
   }
 
   // Update KYC details
-  static Future<bool> updateKYCDetails(String phoneNumber, Map<String, dynamic> kycData) async {
+  static Future<bool> updateKYCDetails(
+      String phoneNumber, Map<String, dynamic> kycData) async {
     try {
       isLoading = true;
       errorMessage = null;
-      
+
       final response = await http.put(
         Uri.parse('$baseUrl/user/$phoneNumber/kyc'),
         headers: {
@@ -99,19 +101,27 @@ class KYCService {
   // Get KYC completion percentage
   static double getKYCCompletionPercentage() {
     if (kycData == null) return 0.0;
-    
+
     List<String> requiredFields = [
-      'name', 'email', 'phone', 'address', 'aadhar', 
-      'voter', 'pan', 'occupation', 'income', 'education'
+      'name',
+      'email',
+      'phone',
+      'address',
+      'aadhar',
+      'voter',
+      'pan',
+      'occupation',
+      'income',
+      'education'
     ];
-    
+
     int completedFields = 0;
     for (String field in requiredFields) {
       if (kycData![field] != null && kycData![field].toString().isNotEmpty) {
         completedFields++;
       }
     }
-    
+
     return (completedFields / requiredFields.length) * 100;
   }
 }

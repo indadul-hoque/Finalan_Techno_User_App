@@ -3,7 +3,7 @@ export 'package:fl_banking_app/pages/auth/otp_verification.dart';
 export 'package:fl_banking_app/pages/bottomNavigation.dart/bottom_navigation.dart';
 export 'package:fl_banking_app/pages/onboarding/onboarding.dart';
 export 'package:fl_banking_app/pages/splash_screen.dart';
-export 'package:fl_banking_app/pages/accountdetail/account_detail_old.dart';
+export 'package:fl_banking_app/pages/accountdetail/account_detail.dart';
 export 'package:fl_banking_app/pages/fundTransfer/fund_transfer.dart';
 export 'package:fl_banking_app/pages/home/home.dart';
 export 'package:fl_banking_app/pages/notifications/notification.dart';

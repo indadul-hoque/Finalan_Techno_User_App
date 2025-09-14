@@ -5,18 +5,19 @@ import 'package:flutter/material.dart';
 
 class StatementService {
   static const String baseUrl = 'https://api.cornix.tech';
-  
+
   // Statement Model
   static Map<String, dynamic>? statementData;
   static bool isLoading = false;
   static String? errorMessage;
 
   // Fetch savings account statement
-  static Future<Map<String, dynamic>?> fetchSavingsStatement(String phoneNumber, String accountId) async {
+  static Future<Map<String, dynamic>?> fetchSavingsStatement(
+      String phoneNumber, String accountId) async {
     try {
       isLoading = true;
       errorMessage = null;
-      
+
       final response = await http.get(
         Uri.parse('$baseUrl/users/$phoneNumber/statement/savings/$accountId'),
         headers: {
@@ -46,11 +47,12 @@ class StatementService {
   }
 
   // Fetch loan account statement
-  static Future<Map<String, dynamic>?> fetchLoanStatement(String phoneNumber, String accountId) async {
+  static Future<Map<String, dynamic>?> fetchLoanStatement(
+      String phoneNumber, String accountId) async {
     try {
       isLoading = true;
       errorMessage = null;
-      
+
       final response = await http.get(
         Uri.parse('$baseUrl/users/$phoneNumber/statement/loan/$accountId'),
         headers: {
@@ -81,9 +83,11 @@ class StatementService {
 
   // Get recent transactions
   static List<Map<String, dynamic>> getRecentTransactions() {
-    if (statementData == null || statementData!['transactions'] == null) return [];
-    
-    final transactions = List<Map<String, dynamic>>.from(statementData!['transactions']);
+    if (statementData == null || statementData!['transactions'] == null)
+      return [];
+
+    final transactions =
+        List<Map<String, dynamic>>.from(statementData!['transactions']);
     // Sort by date (most recent first)
     transactions.sort((a, b) => (b['date'] ?? '').compareTo(a['date'] ?? ''));
     return transactions.take(5).toList(); // Return last 5 transactions
@@ -91,11 +95,13 @@ class StatementService {
 
   // Get account balance from statement
   static double getCurrentBalance() {
-    if (statementData == null || statementData!['transactions'] == null) return 0.0;
-    
-    final transactions = List<Map<String, dynamic>>.from(statementData!['transactions']);
+    if (statementData == null || statementData!['transactions'] == null)
+      return 0.0;
+
+    final transactions =
+        List<Map<String, dynamic>>.from(statementData!['transactions']);
     if (transactions.isEmpty) return 0.0;
-    
+
     // Get the last transaction's balance
     final lastTransaction = transactions.first;
     return (lastTransaction['balance'] ?? 0.0).toDouble();
@@ -103,33 +109,37 @@ class StatementService {
 
   // Get total credits
   static double getTotalCredits() {
-    if (statementData == null || statementData!['transactions'] == null) return 0.0;
-    
-    final transactions = List<Map<String, dynamic>>.from(statementData!['transactions']);
+    if (statementData == null || statementData!['transactions'] == null)
+      return 0.0;
+
+    final transactions =
+        List<Map<String, dynamic>>.from(statementData!['transactions']);
     double total = 0.0;
-    
+
     for (var transaction in transactions) {
       if (transaction['type'] == 'credit') {
         total += (transaction['amount'] ?? 0.0).toDouble();
       }
     }
-    
+
     return total;
   }
 
   // Get total debits
   static double getTotalDebits() {
-    if (statementData == null || statementData!['transactions'] == null) return 0.0;
-    
-    final transactions = List<Map<String, dynamic>>.from(statementData!['transactions']);
+    if (statementData == null || statementData!['transactions'] == null)
+      return 0.0;
+
+    final transactions =
+        List<Map<String, dynamic>>.from(statementData!['transactions']);
     double total = 0.0;
-    
+
     for (var transaction in transactions) {
       if (transaction['type'] == 'debit') {
         total += (transaction['amount'] ?? 0.0).toDouble();
       }
     }
-    
+
     return total;
   }
 

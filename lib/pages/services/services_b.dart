@@ -28,11 +28,6 @@ class _ServicesScreenState extends State<ServicesScreen> {
       "image": "assets/bottomNavigation/Glyph_ undefined.png",
       "name": "Deposit",
       "routeName": "/addDeposit"
-    },
-    {
-      "image": "assets/bottomNavigation/money-16-regular.png",
-      "name": "Loans",
-      "routeName": "/educationLoan"
     }
   ];
 

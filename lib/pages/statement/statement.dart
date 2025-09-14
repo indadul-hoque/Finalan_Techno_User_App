@@ -1,503 +1,261 @@
-import 'package:dotted_border/dotted_border.dart';
-import 'package:fl_banking_app/localization/localization_const.dart';
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
-
-import '../../theme/theme.dart';
-import '../../widget/column_builder.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class StatementScreen extends StatefulWidget {
   const StatementScreen({Key? key}) : super(key: key);
 
   @override
-  State<StatementScreen> createState() => _StatementScreenState();
+  _StatementScreenState createState() => _StatementScreenState();
 }
 
 class _StatementScreenState extends State<StatementScreen> {
-  String? accountType;
+  static const String baseUrl = "https://api.cornix.tech";
 
-  DateTime firstDate = DateTime.now().subtract(const Duration(days: 1));
+  String? mobile;
+  List<Map<String, dynamic>> accounts = [];
+  Map<String, dynamic>? selectedAccount;
+  List<dynamic> transactions = [];
 
-  DateTime secondDate = DateTime.now();
+  DateTime fromDate = DateTime.now().subtract(const Duration(days: 7));
+  DateTime toDate = DateTime.now();
 
-  final bankAccount = [
-    {"name": translation('statement.current_account'), "id": 0},
-    {"name": translation('statement.saving_account'), "id": 1},
-    {"name": translation('statement.salary_account'), "id": 2},
-    {"name": translation('statement.NRI_account'), "id": 3},
-  ];
-
-  final transactionlist = [
-    {
-      "image": "assets/home/fundTransfer.png",
-      "name": "Jeklin shah",
-      "title": "Money transfer",
-      "money": 140,
-      "isCredit": false,
-    },
-    {
-      "image": "assets/home/logos_paypal.png",
-      "name": "Paypal",
-      "title": "Deposits",
-      "money": 140,
-      "isCredit": true
-    },
-    {
-      "image": "assets/statement/clarity_mobile-phone-line.png",
-      "name": "+91 987654321",
-      "title": "Mobile payment",
-      "money": 150,
-      "isCredit": false,
-    },
-    {
-      "image": "assets/statement/atm 1.png",
-      "name": "Atm",
-      "title": "Cash withdrawal",
-      "money": 140,
-      "isCredit": false
-    },
-    {
-      "image": "assets/home/fundTransfer.png",
-      "name": "Jane Cooper",
-      "title": "Money transfer",
-      "money": 640,
-      "isCredit": true,
-    },
-    {
-      "image": "assets/home/receipt.png",
-      "name": "Electricity",
-      "title": "bill payment",
-      "money": 540,
-      "isCredit": false
-    },
-    {
-      "image": "assets/statement/ebay 1.png",
-      "name": "eBay",
-      "title": "Online payment",
-      "money": 190,
-      "isCredit": false
-    },
-    {
-      "image": "assets/home/amozon.png",
-      "name": "Amazon",
-      "title": "Online payment",
-      "money": 440,
-      "isCredit": false
-    }
-  ];
+  bool loadingAccounts = true;
+  bool loadingTransactions = false;
 
   @override
   void initState() {
-    setState(() {
-      accountType = bankAccount[1]['name'].toString();
-    });
     super.initState();
+    _loadMobileAndFetchAccounts();
+  }
+
+  Future<void> _loadMobileAndFetchAccounts() async {
+    final prefs = await SharedPreferences.getInstance();
+    final phone = prefs.getString('phoneNumber') ?? '9519874704';
+    setState(() => mobile = phone);
+    fetchAccounts();
+  }
+
+  Future<void> fetchAccounts() async {
+    if (mobile == null) return;
+
+    setState(() => loadingAccounts = true);
+
+    final url = Uri.parse("$baseUrl/user/$mobile/accounts");
+
+    try {
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final fetchedAccounts =
+            List<Map<String, dynamic>>.from(data['accounts'] ?? []);
+
+        setState(() {
+          accounts = fetchedAccounts;
+          if (accounts.isNotEmpty) {
+            selectedAccount = accounts[0];
+            fetchTransactions();
+          }
+        });
+      } else {
+        debugPrint("Error fetching accounts: ${response.body}");
+      }
+    } catch (e) {
+      debugPrint("Exception fetching accounts: $e");
+    }
+
+    setState(() => loadingAccounts = false);
+  }
+
+  Future<void> fetchTransactions() async {
+    if (selectedAccount == null || mobile == null) return;
+
+    setState(() {
+      loadingTransactions = true;
+      transactions = [];
+    });
+
+    final accountId =
+        selectedAccount!['accountId'] ?? selectedAccount!['accountNumber'];
+    final accountType = selectedAccount!['accountType'] as String? ?? '';
+
+    final url =
+        Uri.parse("$baseUrl/users/$mobile/statement/$accountType/$accountId");
+    print("Fetching: $url");
+
+    try {
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          transactions = data['transactions'] ?? [];
+        });
+      } else {
+        debugPrint("Error fetching statement: ${response.body}");
+      }
+    } catch (e) {
+      debugPrint("Exception fetching statement: $e");
+    }
+
+    setState(() => loadingTransactions = false);
+  }
+
+  Future<void> pickFromDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: fromDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+    );
+    if (picked != null && picked != fromDate) setState(() => fromDate = picked);
+  }
+
+  Future<void> pickToDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: toDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+    );
+    if (picked != null && picked != toDate) setState(() => toDate = picked);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        centerTitle: false,
-        shadowColor: blackColor.withValues(alpha: 0.4),
-        backgroundColor: scaffoldBgColor,
-        foregroundColor: black33Color,
+        title: const Text("Statement"),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
-        titleSpacing: 0,
-        title: Text(
-          getTranslation(context, 'statement.statement'),
-          style: appBarStyle,
+          onPressed: () => Navigator.pop(context),
         ),
         actions: [
           IconButton(
-            onPressed: () {},
-            icon: const Icon(
-              Icons.file_download_outlined,
-              color: primaryColor,
-            ),
-          )
-        ],
-      ),
-      body: ListView(
-        padding: const EdgeInsets.symmetric(vertical: fixPadding * 2),
-        physics: const BouncingScrollPhysics(),
-        children: [
-          statementDetail(context),
-          heightSpace,
-          heightSpace,
-          dottedBorder(),
-          heightSpace,
-          heightSpace,
-          selectDate(context),
-          heightSpace,
-          heightSpace,
-          dottedBorder(),
-          heightSpace,
-          heightSpace,
-          transactionTitle(),
-          transactionResultList(),
-        ],
-      ),
-    );
-  }
-
-  transactionResultList() {
-    return ColumnBuilder(
-      itemBuilder: (context, index) {
-        return Container(
-          width: double.maxFinite,
-          margin: const EdgeInsets.symmetric(
-              vertical: fixPadding, horizontal: fixPadding * 2),
-          padding: const EdgeInsets.all(fixPadding * 1.5),
-          decoration: BoxDecoration(
-            color: whiteColor,
-            borderRadius: BorderRadius.circular(10),
-            boxShadow: [
-              BoxShadow(
-                color: blackColor.withValues(alpha: 0.25),
-                blurRadius: 6,
-              )
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                height: 38,
-                width: 38,
-                padding: const EdgeInsets.all(fixPadding / 1.2),
-                decoration: const BoxDecoration(
-                  color: Color(0xFFEDEBEB),
-                  shape: BoxShape.circle,
-                ),
-                child: Image.asset(
-                  transactionlist[index]['image'].toString(),
-                ),
-              ),
-              widthSpace,
-              width5Space,
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      transactionlist[index]['name'].toString(),
-                      style: bold15Black33,
-                    ),
-                    heightBox(3.0),
-                    Text(
-                      transactionlist[index]['title'].toString(),
-                      style: bold12Grey94,
-                    )
-                  ],
-                ),
-              ),
-              transactionlist[index]['isCredit'] == false
-                  ? Text(
-                      "-\₹${transactionlist[index]['money']}",
-                      style: bold15Red,
-                    )
-                  : Text(
-                      "+\₹${transactionlist[index]['money']}",
-                      style: bold15Green,
-                    )
-            ],
-          ),
-        );
-      },
-      itemCount: transactionlist.length,
-    );
-  }
-
-  transactionTitle() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: fixPadding * 2),
-      child: Text(
-        getTranslation(context, 'statement.transaction_result'),
-        style: bold16Black33,
-      ),
-    );
-  }
-
-  selectDate(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: fixPadding * 2),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            getTranslation(context, 'statement.select_date'),
-            style: bold16Black33,
-          ),
-          heightSpace,
-          Row(
-            children: [
-              Expanded(
-                flex: 2,
-                child: GestureDetector(
-                  onTap: () async {
-                    final pickedDate = await showDatePicker(
-                        context: context,
-                        initialDate: DateTime.now(),
-                        firstDate: DateTime(2000),
-                        lastDate: DateTime.now(),
-                        builder: (context, child) {
-                          return Theme(
-                              data: Theme.of(context).copyWith(
-                                  colorScheme: const ColorScheme.light(
-                                      primary: primaryColor)),
-                              child: child!);
-                        });
-
-                    if (pickedDate != null) {
-                      setState(() {
-                        firstDate = pickedDate;
-                      });
-                    }
-                  },
-                  child: Container(
-                    height: 45,
-                    width: double.maxFinite,
-                    padding: const EdgeInsets.symmetric(horizontal: fixPadding),
-                    decoration: BoxDecoration(
-                      color: whiteColor,
-                      borderRadius: BorderRadius.circular(5),
-                      boxShadow: [
-                        BoxShadow(
-                          color: blackColor.withValues(alpha: 0.25),
-                          blurRadius: 6,
-                        )
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.date_range_outlined,
-                          size: 20,
-                          color: primaryColor,
-                        ),
-                        width5Space,
-                        Expanded(
-                          child: Text(
-                            " ${DateFormat('dd MMM, yyyy', Localizations.localeOf(context).toString()).format(firstDate)}",
-                            style: semibold15Black,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        )
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              widthSpace,
-              widthSpace,
-              Expanded(
-                flex: 2,
-                child: GestureDetector(
-                  onTap: () async {
-                    final pickedDate = await showDatePicker(
-                        context: context,
-                        initialDate: DateTime.now(),
-                        firstDate: DateTime(2000),
-                        lastDate: DateTime.now(),
-                        builder: (context, child) {
-                          return Theme(
-                              data: Theme.of(context).copyWith(
-                                  colorScheme: const ColorScheme.light(
-                                      primary: primaryColor)),
-                              child: child!);
-                        });
-
-                    if (pickedDate != null) {
-                      setState(() {
-                        secondDate = pickedDate;
-                      });
-                    }
-                  },
-                  child: Container(
-                    height: 45,
-                    width: double.maxFinite,
-                    padding: const EdgeInsets.symmetric(horizontal: fixPadding),
-                    decoration: BoxDecoration(
-                      color: whiteColor,
-                      borderRadius: BorderRadius.circular(5),
-                      boxShadow: [
-                        BoxShadow(
-                          color: blackColor.withValues(alpha: 0.25),
-                          blurRadius: 6,
-                        )
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.date_range_outlined,
-                          size: 20,
-                          color: primaryColor,
-                        ),
-                        widthSpace,
-                        Expanded(
-                          child: Text(
-                            DateFormat('dd MMM, yyyy',
-                                    Localizations.localeOf(context).toString())
-                                .format(secondDate),
-                            style: semibold15Black,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        )
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              widthSpace,
-              widthSpace,
-              Expanded(
-                flex: 1,
-                child: Container(
-                  height: 45,
-                  width: double.maxFinite,
-                  padding: const EdgeInsets.symmetric(horizontal: fixPadding),
-                  decoration: BoxDecoration(
-                    color: primaryColor,
-                    borderRadius: BorderRadius.circular(5),
-                  ),
-                  alignment: Alignment.center,
-                  child: FittedBox(
-                    child: Text(
-                      getTranslation(context, 'statement.go'),
-                      style: bold16White,
-                    ),
-                  ),
-                ),
-              )
-            ],
+            icon: const Icon(Icons.download),
+            onPressed: () {
+              // TODO: Implement download as PDF
+            },
           ),
         ],
       ),
-    );
-  }
-
-  dottedBorder() {
-    return DottedBorder(
-      padding: EdgeInsets.zero,
-      dashPattern: const [1.5, 4],
-      color: grey87Color,
-      child: Container(),
-    );
-  }
-
-  statementDetail(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: fixPadding * 2),
-      padding: const EdgeInsets.symmetric(
-          vertical: fixPadding, horizontal: fixPadding * 1.5),
-      decoration: BoxDecoration(
-        color: const Color(0xFFE5D1D8),
-        borderRadius: BorderRadius.circular(10.0),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      body: mobile == null || loadingAccounts
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
               children: [
-                InkWell(
-                  onTap: () {
-                    bankaccountTypeSheet(context);
-                  },
+                // Account selector
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  margin: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.pink.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   child: Row(
-                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        accountType.toString(),
-                        style: bold14Grey87,
+                      Expanded(
+                        child: DropdownButton<Map<String, dynamic>>(
+                          value: selectedAccount,
+                          hint: const Text("Select Account"),
+                          isExpanded: true,
+                          items: accounts
+                              .map<DropdownMenuItem<Map<String, dynamic>>>(
+                                  (acc) {
+                            final accountType =
+                                acc['accountType'] as String? ?? '';
+                            final capitalizedType =
+                                toBeginningOfSentenceCase(accountType) ?? '';
+                            return DropdownMenuItem<Map<String, dynamic>>(
+                              value: acc,
+                              child: Text(
+                                  "$capitalizedType - ${acc['accountNumber'] ?? acc['accountId']}"),
+                            );
+                          }).toList(),
+                          onChanged: (Map<String, dynamic>? acc) {
+                            setState(() => selectedAccount = acc);
+                            fetchTransactions();
+                          },
+                        ),
                       ),
-                      widthSpace,
-                      const Icon(
-                        Icons.keyboard_arrow_down_rounded,
-                        color: grey87Color,
-                      )
+                      const SizedBox(width: 12),
+                      Text(
+                        "₹${selectedAccount?['balance'] ?? '0.00'}",
+                        style: const TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
                     ],
                   ),
                 ),
-                height5Space,
-                const Text(
-                  "SB-*******1234",
-                  style: semibold16Black33,
-                )
+
+                // Date range selector
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    TextButton.icon(
+                      onPressed: pickFromDate,
+                      icon: const Icon(Icons.calendar_today),
+                      label: Text(DateFormat("dd MMM, yyyy").format(fromDate)),
+                    ),
+                    const SizedBox(width: 8),
+                    TextButton.icon(
+                      onPressed: pickToDate,
+                      icon: const Icon(Icons.calendar_today),
+                      label: Text(DateFormat("dd MMM, yyyy").format(toDate)),
+                    ),
+                    ElevatedButton(
+                      onPressed: fetchTransactions,
+                      child: const Text("Go"),
+                    ),
+                  ],
+                ),
+
+                const Divider(),
+
+                // Transaction list
+                Expanded(
+                  child: loadingTransactions
+                      ? const Center(child: CircularProgressIndicator())
+                      : transactions.isEmpty
+                          ? const Center(child: Text("No transactions found"))
+                          : ListView.builder(
+                              itemCount: transactions.length,
+                              itemBuilder: (context, index) {
+                                final tx = transactions[index];
+                                final isCredit =
+                                    (tx['type'] ?? '').toLowerCase() ==
+                                        "credit";
+
+                                return ListTile(
+                                  leading: CircleAvatar(
+                                    backgroundColor: isCredit
+                                        ? Colors.green.shade100
+                                        : Colors.red.shade100,
+                                    child: Icon(
+                                      isCredit
+                                          ? Icons.arrow_downward
+                                          : Icons.arrow_upward,
+                                      color:
+                                          isCredit ? Colors.green : Colors.red,
+                                    ),
+                                  ),
+                                  title: Text(tx['name'] ?? "Unknown"),
+                                  subtitle: Text(tx['narration'] ?? ""),
+                                  trailing: Text(
+                                    "${isCredit ? '+' : '-'}₹${tx['amount'] ?? 0}",
+                                    style: TextStyle(
+                                      color:
+                                          isCredit ? Colors.green : Colors.red,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                ),
               ],
             ),
-          ),
-          widthSpace,
-          Column(
-            children: [
-              Text(
-                getTranslation(context, 'account_detail.total_balance'),
-                style: bold14Grey87,
-              ),
-              height5Space,
-              const Text(
-                "₹1000.00",
-                style: bold20Primary,
-              )
-            ],
-          )
-        ],
-      ),
-    );
-  }
-
-  bankaccountTypeSheet(BuildContext context) {
-    return showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return Container(
-          width: double.maxFinite,
-          decoration: const BoxDecoration(
-            color: whiteColor,
-            borderRadius: BorderRadius.vertical(
-              top: Radius.circular(20),
-            ),
-          ),
-          padding: const EdgeInsets.symmetric(vertical: fixPadding),
-          child: ColumnBuilder(
-              mainAxisSize: MainAxisSize.min,
-              itemBuilder: (context, index) {
-                return Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    ListTile(
-                      onTap: () {
-                        setState(() {
-                          accountType = bankAccount[index]['name'].toString();
-                        });
-                        Navigator.pop(context);
-                      },
-                      title: Text(
-                        bankAccount[index]['name'].toString(),
-                        style: bold16Black33,
-                      ),
-                    ),
-                    bankAccount.length - 1 == index
-                        ? const SizedBox()
-                        : Container(
-                            color: greyD9Color,
-                            height: 1,
-                            width: double.maxFinite,
-                          )
-                  ],
-                );
-              },
-              itemCount: bankAccount.length),
-        );
-      },
     );
   }
 }

@@ -184,12 +184,6 @@ class _HomeScreenState extends State<HomeScreen> {
       "name": "Deposit",
       "routeName": "/addDeposit",
       "isDetail": true
-    },
-    {
-      "image": "assets/bottomNavigation/money-16-regular.png",
-      "name": "Loans",
-      "routeName": "/educationLoan",
-      "isDetail": true
     }
   ];
 
@@ -417,39 +411,6 @@ class _HomeScreenState extends State<HomeScreen> {
           OptimizedServiceCard(
             serviceData: servicelist[i],
           ),
-        GestureDetector(
-          onTap: () {
-            Navigator.pushNamed(context, '/services');
-          },
-          child: Container(
-            padding: const EdgeInsets.all(fixPadding),
-            decoration: BoxDecoration(
-              color: whiteColor,
-              borderRadius: BorderRadius.circular(10),
-              boxShadow: [
-                BoxShadow(
-                  color: blackColor.withOpacity(0.25),
-                  blurRadius: 6,
-                )
-              ],
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Image.asset(
-                  "assets/home/more.png",
-                  height: 24,
-                  width: 24,
-                ),
-                Text(
-                  getTranslation(context, 'home.more'),
-                  style: bold15Grey94,
-                  overflow: TextOverflow.ellipsis,
-                )
-              ],
-            ),
-          ),
-        ),
       ],
     );
   }
@@ -499,56 +460,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-
-  // Widget _buildTotalBalanceDisplay() {
-  //   return Padding(
-  //     padding: const EdgeInsets.symmetric(horizontal: fixPadding * 2),
-  //     child: Container(
-  //       padding: const EdgeInsets.all(fixPadding * 1.5),
-  //       decoration: BoxDecoration(
-  //         color: whiteColor.withOpacity(0.2),
-  //         borderRadius: BorderRadius.circular(15.0),
-  //         border: Border.all(
-  //           color: whiteColor.withOpacity(0.3),
-  //           width: 1,
-  //         ),
-  //       ),
-  //       child: Row(
-  //         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  //         children: [
-  //           Column(
-  //             crossAxisAlignment: CrossAxisAlignment.start,
-  //             children: [
-  //               Text(
-  //                 'Total Balance',
-  //                 style: semibold16White,
-  //               ),
-  //               height5Space,
-  //               Text(
-  //                 BankAccountsService.formatBalance(BankAccountsService.getTotalBalance()),
-  //                 style: bold25White,
-  //               ),
-  //             ],
-  //           ),
-  //           Column(
-  //             crossAxisAlignment: CrossAxisAlignment.end,
-  //             children: [
-  //               Text(
-  //                 'Accounts',
-  //                 style: semibold16White,
-  //               ),
-  //               height5Space,
-  //               Text(
-  //                 '${BankAccountsService.accounts?.length ?? 0}',
-  //                 style: bold20White,
-  //               ),
-  //             ],
-  //           ),
-  //         ],
-  //       ),
-  //     ),
-  //   );
-  // }
 
   Widget _buildBankAccountsSummary() {
     if (selectedUserId == null) return const SizedBox.shrink();
