@@ -11,6 +11,24 @@ class StatementService {
   static bool isLoading = false;
   static String? errorMessage;
 
+  static Future<Map<String, dynamic>?> fetchBalance(
+      String phoneNumber, String accountId) async {
+    try {
+      final response = await http.get(Uri.parse(
+          'https://api.cornix.tech/users/$phoneNumber/balance/$accountId'));
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        errorMessage = 'Failed to fetch balance';
+        return null;
+      }
+    } catch (e) {
+      errorMessage = e.toString();
+      return null;
+    }
+  }
+
+
   // Fetch savings account statement
   static Future<Map<String, dynamic>?> fetchSavingsStatement(
       String phoneNumber, String accountId) async {

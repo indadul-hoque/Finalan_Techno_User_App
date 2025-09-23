@@ -9,7 +9,7 @@ import '../../theme/theme.dart';
 
 class DepositScreen extends StatefulWidget {
   final String? phoneNumber;
-  
+
   const DepositScreen({Key? key, this.phoneNumber}) : super(key: key);
   @override
   State<DepositScreen> createState() => _DepositScreenState();
@@ -36,19 +36,18 @@ class _DepositScreenState extends State<DepositScreen> {
       });
 
       final accounts = await BankAccountsService.fetchBankAccounts(phone);
-      
+
       if (accounts != null) {
         final savings = BankAccountsService.getSavingsAccounts();
         setState(() {
           savingsAccounts = savings;
           isLoading = false;
         });
-        
-
       } else {
         setState(() {
           isLoading = false;
-          errorMessage = BankAccountsService.errorMessage ?? 'Failed to fetch savings accounts';
+          errorMessage = BankAccountsService.errorMessage ??
+              'Failed to fetch savings accounts';
         });
         BankAccountsService.showToast(errorMessage!, isError: true);
       }
@@ -60,8 +59,6 @@ class _DepositScreenState extends State<DepositScreen> {
       BankAccountsService.showToast(errorMessage!, isError: true);
     }
   }
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -88,34 +85,34 @@ class _DepositScreenState extends State<DepositScreen> {
           style: bold20White,
         ),
       ),
-      body: isLoading 
-        ? const Center(child: CircularProgressIndicator())
-        : errorMessage != null
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    errorMessage!,
-                    style: bold16Black33,
-                    textAlign: TextAlign.center,
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : errorMessage != null
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        errorMessage!,
+                        style: bold16Black33,
+                        textAlign: TextAlign.center,
+                      ),
+                      heightSpace,
+                      ElevatedButton(
+                        onPressed: () => _fetchSavingsAccounts(),
+                        child: const Text('Retry'),
+                      ),
+                    ],
                   ),
-                  heightSpace,
-                  ElevatedButton(
-                    onPressed: () => _fetchSavingsAccounts(),
-                    child: const Text('Retry'),
-                  ),
-                ],
-              ),
-            )
-          : ListView(
-              physics: const BouncingScrollPhysics(),
-              padding: EdgeInsets.zero,
-              children: [
-                currentLoansListContent(),
-                heightSpace,
-              ],
-            ),
+                )
+              : ListView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: EdgeInsets.zero,
+                  children: [
+                    currentLoansListContent(),
+                    heightSpace,
+                  ],
+                ),
     );
   }
 
@@ -155,7 +152,7 @@ class _DepositScreenState extends State<DepositScreen> {
         final balance = account['balance'] ?? 0.0;
         final openingDate = account['openingDate'] ?? 'N/A';
         final interestRate = planDetails['annualInterestRate'] ?? '0';
-        
+
         return Container(
           margin: const EdgeInsets.symmetric(
               vertical: fixPadding, horizontal: fixPadding * 2),
@@ -309,8 +306,6 @@ class _DepositScreenState extends State<DepositScreen> {
       ],
     );
   }
-
-
 
   dottedLine() {
     return DottedBorder(

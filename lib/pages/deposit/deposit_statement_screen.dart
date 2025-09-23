@@ -1,22 +1,69 @@
-import 'package:fl_banking_app/localization/localization_const.dart';
-import 'package:fl_banking_app/services/statement_service.dart';
-import 'package:fl_banking_app/widget/column_builder.dart';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
 import '../../theme/theme.dart';
+import 'package:fl_banking_app/widget/column_builder.dart';
+import 'package:fl_banking_app/localization/localization_const.dart';
+
+class StatementService {
+  static String? errorMessage;
+
+  static void showToast(String message, {bool isError = false}) {
+    // Placeholder for toast
+    print('Toast: $message');
+  }
+
+  static Future<Map<String, dynamic>?> fetchBalance(
+      String phoneNumber, String accountId) async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+            'https://api.cornix.tech/users/$phoneNumber/balance/$accountId'),
+      );
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        return null;
+      }
+    } catch (e) {
+      errorMessage = e.toString();
+      return null;
+    }
+  }
+
+  static Future<Map<String, dynamic>?> fetchSavingsStatement(
+      String phoneNumber, String accountId) async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+            'https://api.cornix.tech/users/$phoneNumber/statement/savings/$accountId'),
+      );
+      print("\nStatement Response:\n${response.body}\n");
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        return null;
+      }
+    } catch (e) {
+      errorMessage = e.toString();
+      return null;
+    }
+  }
+}
 
 class DepositStatementScreen extends StatefulWidget {
   final String phoneNumber;
   final String accountId;
   final String accountType;
-  
+
   const DepositStatementScreen({
-    Key? key, 
+    Key? key,
     required this.phoneNumber,
     required this.accountId,
     required this.accountType,
   }) : super(key: key);
-  
+
   @override
   State<DepositStatementScreen> createState() => _DepositStatementScreenState();
 }
@@ -25,34 +72,52 @@ class _DepositStatementScreenState extends State<DepositStatementScreen> {
   bool isLoading = true;
   String? errorMessage;
   Map<String, dynamic>? statementData;
+  double? currentBalance;
 
   @override
   void initState() {
     super.initState();
-    _fetchStatement();
+    _fetchData();
   }
 
-  Future<void> _fetchStatement() async {
+  Future<void> _fetchData() async {
     try {
       setState(() {
         isLoading = true;
         errorMessage = null;
       });
 
-      final data = await StatementService.fetchSavingsStatement(
-        widget.phoneNumber, 
-        widget.accountId
-      );
-      
-      if (data != null) {
+      final balanceResponse =
+          await StatementService.fetchBalance(widget.phoneNumber, widget.accountId);
+      final statementResponse =
+          await StatementService.fetchSavingsStatement(widget.phoneNumber, widget.accountId);
+
+      if (balanceResponse != null && statementResponse != null) {
         setState(() {
-          statementData = data;
+          // Parse balance safely
+          final balance = balanceResponse['balance'];
+          if (balance is num) {
+            currentBalance = balance.toDouble();
+          } else if (balance is String) {
+            currentBalance = double.tryParse(balance);
+          } else if (balance is Map && balance['amount'] != null) {
+            final amount = balance['amount'];
+            if (amount is num) {
+              currentBalance = amount.toDouble();
+            } else if (amount is String) {
+              currentBalance = double.tryParse(amount);
+            }
+          } else {
+            currentBalance = 0.0;
+          }
+
+          statementData = statementResponse;
           isLoading = false;
         });
       } else {
         setState(() {
           isLoading = false;
-          errorMessage = StatementService.errorMessage ?? 'Failed to fetch statement';
+          errorMessage = 'Failed to fetch data. Please try again.';
         });
         StatementService.showToast(errorMessage!, isError: true);
       }
@@ -91,58 +156,51 @@ class _DepositStatementScreenState extends State<DepositStatementScreen> {
         ),
         actions: [
           IconButton(
-            onPressed: _fetchStatement,
-            icon: const Icon(
-              Icons.refresh,
-              color: Colors.white,
-              size: 20,
-            ),
+            onPressed: _fetchData,
+            icon: const Icon(Icons.refresh, color: Colors.white, size: 20),
           ),
         ],
       ),
-      body: isLoading 
-        ? const Center(child: CircularProgressIndicator())
-        : errorMessage != null
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    errorMessage!,
-                    style: bold16Black33,
-                    textAlign: TextAlign.center,
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : errorMessage != null
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        errorMessage!,
+                        style: bold16Black33,
+                        textAlign: TextAlign.center,
+                      ),
+                      heightSpace,
+                      ElevatedButton(
+                        onPressed: _fetchData,
+                        child: const Text('Retry'),
+                      ),
+                    ],
                   ),
-                  heightSpace,
-                  ElevatedButton(
-                    onPressed: _fetchStatement,
-                    child: const Text('Retry'),
-                  ),
-                ],
-              ),
-            )
-          : statementData == null
-            ? const Center(
-                child: Text('No statement data available'),
-              )
-            : ListView(
-                physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.all(fixPadding * 2),
-                children: [
-                  _buildAccountSummary(),
-                  heightSpace,
-                  heightSpace,
-                  _buildTransactionsTitle(),
-                  heightSpace,
-                  _buildTransactionsList(),
-                ],
-              ),
+                )
+              : statementData == null
+                  ? const Center(child: Text('No statement data available'))
+                  : ListView(
+                      physics: const BouncingScrollPhysics(),
+                      padding: const EdgeInsets.all(fixPadding * 2),
+                      children: [
+                        _buildAccountSummary(),
+                        heightSpace,
+                        heightSpace,
+                        _buildTransactionsTitle(),
+                        heightSpace,
+                        _buildTransactionsList(),
+                      ],
+                    ),
     );
   }
 
   Widget _buildAccountSummary() {
     final transactions = statementData!['transactions'] as List<dynamic>? ?? [];
-    final currentBalance = transactions.isNotEmpty ? transactions.first['balance'] : 0.0;
-    
+
     return Container(
       padding: const EdgeInsets.all(fixPadding * 1.5),
       decoration: BoxDecoration(
@@ -161,16 +219,9 @@ class _DepositStatementScreenState extends State<DepositStatementScreen> {
         children: [
           Row(
             children: [
-              const Icon(
-                Icons.account_balance,
-                color: primaryColor,
-                size: 24,
-              ),
+              const Icon(Icons.account_balance, color: primaryColor, size: 24),
               widthSpace,
-              const Text(
-                'Account Summary',
-                style: bold18Black33,
-              ),
+              const Text('Account Summary', style: bold18Black33),
             ],
           ),
           heightSpace,
@@ -180,14 +231,8 @@ class _DepositStatementScreenState extends State<DepositStatementScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Account ID',
-                      style: semibold14Grey94,
-                    ),
-                    Text(
-                      widget.accountId,
-                      style: bold16Black33,
-                    ),
+                    Text('Account ID', style: semibold14Grey94),
+                    Text(widget.accountId, style: bold16Black33),
                   ],
                 ),
               ),
@@ -195,12 +240,9 @@ class _DepositStatementScreenState extends State<DepositStatementScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
+                    Text('Current Balance', style: semibold14Grey94),
                     Text(
-                      'Current Balance',
-                      style: semibold14Grey94,
-                    ),
-                    Text(
-                      '₹${currentBalance.toStringAsFixed(2)}',
+                      '₹${currentBalance?.toStringAsFixed(2) ?? '0.00'}',
                       style: bold18Primary,
                     ),
                   ],
@@ -215,14 +257,8 @@ class _DepositStatementScreenState extends State<DepositStatementScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Account Type',
-                      style: semibold14Grey94,
-                    ),
-                    Text(
-                      widget.accountType.toUpperCase(),
-                      style: bold16Black33,
-                    ),
+                    Text('Account Type', style: semibold14Grey94),
+                    Text(widget.accountType.toUpperCase(), style: bold16Black33),
                   ],
                 ),
               ),
@@ -230,14 +266,8 @@ class _DepositStatementScreenState extends State<DepositStatementScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text(
-                      'Total Transactions',
-                      style: semibold14Grey94,
-                    ),
-                    Text(
-                      '${transactions.length}',
-                      style: bold16Black33,
-                    ),
+                    Text('Total Transactions', style: semibold14Grey94),
+                    Text('${transactions.length}', style: bold16Black33),
                   ],
                 ),
               ),
@@ -249,15 +279,12 @@ class _DepositStatementScreenState extends State<DepositStatementScreen> {
   }
 
   Widget _buildTransactionsTitle() {
-    return Text(
-      'Transaction History',
-      style: bold18Black33,
-    );
+    return Text('Transaction History', style: bold18Black33);
   }
 
   Widget _buildTransactionsList() {
     final transactions = statementData!['transactions'] as List<dynamic>? ?? [];
-    
+
     if (transactions.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(fixPadding * 2),
@@ -267,26 +294,20 @@ class _DepositStatementScreenState extends State<DepositStatementScreen> {
         ),
         child: const Row(
           children: [
-            Icon(
-              Icons.info_outline,
-              color: Colors.grey,
-              size: 20,
-            ),
+            Icon(Icons.info_outline, color: Colors.grey, size: 20),
             widthSpace,
-            Text(
-              'No transactions found',
-              style: semibold14Grey94,
-            ),
+            Text('No transactions found', style: semibold14Grey94),
           ],
         ),
       );
     }
 
     return ColumnBuilder(
+      itemCount: transactions.length,
       itemBuilder: (context, index) {
         final transaction = transactions[index];
         final isCredit = transaction['type'] == 'credit';
-        
+
         return Container(
           margin: const EdgeInsets.only(bottom: fixPadding),
           padding: const EdgeInsets.all(fixPadding),
@@ -314,7 +335,9 @@ class _DepositStatementScreenState extends State<DepositStatementScreen> {
                     height: 35,
                     width: 35,
                     decoration: BoxDecoration(
-                      color: isCredit ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+                      color: isCredit
+                          ? Colors.green.withOpacity(0.1)
+                          : Colors.red.withOpacity(0.1),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
@@ -329,15 +352,12 @@ class _DepositStatementScreenState extends State<DepositStatementScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          transaction['narration']?.isNotEmpty == true 
-                              ? transaction['narration'] 
+                          transaction['narration']?.isNotEmpty == true
+                              ? transaction['narration']
                               : (isCredit ? 'Deposit' : 'Withdrawal'),
                           style: bold15Black33,
                         ),
-                        Text(
-                          transaction['date'] ?? 'N/A',
-                          style: semibold14Grey94,
-                        ),
+                        Text(transaction['date'] ?? 'N/A', style: semibold14Grey94),
                       ],
                     ),
                   ),
@@ -345,7 +365,7 @@ class _DepositStatementScreenState extends State<DepositStatementScreen> {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        isCredit 
+                        isCredit
                             ? '+₹${transaction['amount']?.toStringAsFixed(2) ?? '0.00'}'
                             : '-₹${transaction['amount']?.toStringAsFixed(2) ?? '0.00'}',
                         style: TextStyle(
@@ -354,10 +374,10 @@ class _DepositStatementScreenState extends State<DepositStatementScreen> {
                           fontSize: 16,
                         ),
                       ),
-                                        Text(
-                    'Balance: ₹${transaction['balance']?.toStringAsFixed(2) ?? '0.00'}',
-                    style: semibold14Grey94,
-                  ),
+                      Text(
+                        'Balance: ₹${transaction['balance']?.toStringAsFixed(2) ?? '0.00'}',
+                        style: semibold14Grey94,
+                      ),
                     ],
                   ),
                 ],
@@ -373,16 +393,10 @@ class _DepositStatementScreenState extends State<DepositStatementScreen> {
                   child: Row(
                     children: [
                       if (transaction['method'] != null) ...[
-                        Text(
-                          'Method: ${transaction['method']}',
-                          style: semibold14Grey94,
-                        ),
+                        Text('Method: ${transaction['method']}', style: semibold14Grey94),
                         if (transaction['glHead'] != null) ...[
                           const SizedBox(width: 10),
-                          Text(
-                            '•',
-                            style: semibold14Grey94,
-                          ),
+                          Text('•', style: semibold14Grey94),
                           const SizedBox(width: 10),
                         ],
                       ],
@@ -402,7 +416,6 @@ class _DepositStatementScreenState extends State<DepositStatementScreen> {
           ),
         );
       },
-      itemCount: transactions.length,
     );
   }
 }

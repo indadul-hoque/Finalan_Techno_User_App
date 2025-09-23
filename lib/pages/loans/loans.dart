@@ -11,7 +11,7 @@ import '../../theme/theme.dart';
 
 class LoansScreen extends StatefulWidget {
   final String? phoneNumber;
-  
+
   const LoansScreen({Key? key, this.phoneNumber}) : super(key: key);
 
   @override
@@ -19,19 +19,6 @@ class LoansScreen extends StatefulWidget {
 }
 
 class _LoansScreenState extends State<LoansScreen> {
-  final offerList = [
-    {
-      "image": "assets/loan/image1.jpg",
-      "title": "Make education your top priority",
-      "info": "Lowest interest rate",
-    },
-    {
-      "image": "assets/loan/image2.jpg",
-      "title": "The right choice to finance your car",
-      "info": "Buy your dream car",
-    },
-  ];
-
   List<Map<String, dynamic>> currentLoans = [];
   bool isLoading = true;
   String? errorMessage;
@@ -52,7 +39,7 @@ class _LoansScreenState extends State<LoansScreen> {
       });
 
       final accounts = await BankAccountsService.fetchBankAccounts(phone);
-      
+
       if (accounts != null) {
         final loanAccounts = BankAccountsService.getLoanAccounts();
         setState(() {
@@ -62,7 +49,8 @@ class _LoansScreenState extends State<LoansScreen> {
       } else {
         setState(() {
           isLoading = false;
-          errorMessage = BankAccountsService.errorMessage ?? 'Failed to fetch loan accounts';
+          errorMessage = BankAccountsService.errorMessage ??
+              'Failed to fetch loan accounts';
         });
         BankAccountsService.showToast(errorMessage!, isError: true);
       }
@@ -101,40 +89,37 @@ class _LoansScreenState extends State<LoansScreen> {
           style: bold20White,
         ),
       ),
-      body: isLoading 
-        ? const Center(child: CircularProgressIndicator())
-        : errorMessage != null
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    errorMessage!,
-                    style: bold16Black33,
-                    textAlign: TextAlign.center,
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : errorMessage != null
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        errorMessage!,
+                        style: bold16Black33,
+                        textAlign: TextAlign.center,
+                      ),
+                      heightSpace,
+                      ElevatedButton(
+                        onPressed: () => _fetchLoanAccounts(),
+                        child: const Text('Retry'),
+                      ),
+                    ],
                   ),
-                  heightSpace,
-                  ElevatedButton(
-                    onPressed: () => _fetchLoanAccounts(),
-                    child: const Text('Retry'),
-                  ),
-                ],
-              ),
-            )
-          : ListView(
-              physics: const BouncingScrollPhysics(),
-              padding: EdgeInsets.zero,
-              children: [
-                offerApplyListContent(size, context),
-                dottedLine(),
-                heightSpace,
-                heightSpace,
-                currentLoanTitle(),
-                currentLoansListContent(),
-                heightSpace,
-
-              ],
-            ),
+                )
+              : ListView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: EdgeInsets.zero,
+                  children: [
+                    heightSpace,
+                    heightSpace,
+                    currentLoanTitle(),
+                    currentLoansListContent(),
+                    heightSpace,
+                  ],
+                ),
     );
   }
 
@@ -175,7 +160,7 @@ class _LoansScreenState extends State<LoansScreen> {
         final loanAmount = loan['loanAmount'] ?? 0.0;
         final loanTerm = loan['loanTerm'] ?? 0;
         final interestRate = planDetails['interestRate'] ?? '0';
-        
+
         return Container(
           margin: const EdgeInsets.symmetric(
               vertical: fixPadding, horizontal: fixPadding * 2),
@@ -328,8 +313,6 @@ class _LoansScreenState extends State<LoansScreen> {
     );
   }
 
-
-
   currentLoanTitle() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: fixPadding * 2),
@@ -346,123 +329,6 @@ class _LoansScreenState extends State<LoansScreen> {
       color: primaryColor,
       dashPattern: const [2, 3],
       child: Container(),
-    );
-  }
-
-  offerApplyListContent(Size size, BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(
-          vertical: fixPadding * 2, horizontal: fixPadding),
-      physics: const BouncingScrollPhysics(),
-      child: Row(
-        children: List.generate(
-          offerList.length,
-          (index) {
-            return GestureDetector(
-              onTap: () {
-                Navigator.pushNamed(context, '/educationLoan');
-              },
-              child: Container(
-                height: 152,
-                width: size.width * 0.8,
-                margin: const EdgeInsets.symmetric(horizontal: fixPadding),
-                decoration: BoxDecoration(
-                  color: whiteColor,
-                  borderRadius: BorderRadius.circular(10.0),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF034E65).withValues(alpha: 0.16),
-                      blurRadius: 12,
-                      offset: const Offset(0, 5),
-                    )
-                  ],
-                ),
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    Positioned(
-                      top: 0,
-                      left: 0,
-                      bottom: 0,
-                      child: ClipPath(
-                        clipper: ImageClipper(),
-                        child: Container(
-                          height: double.maxFinite,
-                          width: size.width * 0.43,
-                          decoration: BoxDecoration(
-                            borderRadius: const BorderRadius.horizontal(
-                              left: Radius.circular(10),
-                            ),
-                            image: DecorationImage(
-                              image: AssetImage(
-                                offerList[index]['image'].toString(),
-                              ),
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.only(
-                          right: fixPadding,
-                          top: fixPadding,
-                          bottom: fixPadding,
-                          left: size.width * 0.45),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            offerList[index]['title'].toString(),
-                            style: bold16Primary,
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 2,
-                          ),
-                          FittedBox(
-                            child: Text(
-                              offerList[index]['info'].toString(),
-                              style: bold14Grey87,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          heightSpace,
-                          GestureDetector(
-                            onTap: () {
-                              Navigator.pushNamed(context, '/educationLoan');
-                            },
-                            child: Container(
-                              width: 100,
-                              height: 30,
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: fixPadding / 2),
-                              decoration: BoxDecoration(
-                                color: whiteColor,
-                                borderRadius: BorderRadius.circular(5),
-                                border: Border.all(
-                                  color: primaryColor,
-                                ),
-                              ),
-                              alignment: Alignment.center,
-                              child: FittedBox(
-                                child: Text(
-                                  getTranslation(context, 'loans.apply_now'),
-                                  style: bold14Primary,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        ),
-      ),
     );
   }
 }
