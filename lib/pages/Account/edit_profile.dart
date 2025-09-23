@@ -98,10 +98,12 @@ class _EditProfileState extends State<EditProfile> {
         selectedGender = kycData['gender'] ?? '';
         selectedMaritalStatus = kycData['materialStatus'] ?? '';
 
-        // Nominee details
+        // Nominee details with first letter capitalization
         if (kycData['nominee'] != null) {
-          nomineeNameController.text = kycData['nominee']['name'] ?? '';
-          nomineeRelationController.text = kycData['nominee']['relation'] ?? '';
+          nomineeNameController.text =
+              _capitalizeFirstLetter(kycData['nominee']['name'] ?? '');
+          nomineeRelationController.text =
+              _capitalizeFirstLetter(kycData['nominee']['relation'] ?? '');
           nomineeAadharController.text = kycData['nominee']['aadhar'] ?? '';
         }
 
@@ -118,6 +120,11 @@ class _EditProfileState extends State<EditProfile> {
     setState(() {
       isLoading = false;
     });
+  }
+
+  String _capitalizeFirstLetter(String text) {
+    if (text.isEmpty) return '';
+    return text[0].toUpperCase() + text.substring(1);
   }
 
   Future<void> _updateProfile() async {
