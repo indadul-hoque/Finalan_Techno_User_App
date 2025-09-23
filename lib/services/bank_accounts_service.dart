@@ -77,6 +77,11 @@ class BankAccountsService {
   static List<Map<String, dynamic>> getLoanAccounts() {
     if (accounts == null || accounts!.isEmpty) return [];
 
+    print('\n\n\n');
+    print(accounts!
+        .where((account) => account['accountType'] == 'loan')
+        .toList());
+    print('\n\n\n');
     return accounts!
         .where((account) => account['accountType'] == 'loan')
         .toList();

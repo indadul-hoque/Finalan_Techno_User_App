@@ -48,6 +48,7 @@ dependencies:
   fluttertoast: ^8.2.12
   local_auth: ^2.1.5
   google_maps_flutter: ^2.10.0
+  smooth_page_indicator: ^1.2.1
 
 dev_dependencies:
   flutter_test:

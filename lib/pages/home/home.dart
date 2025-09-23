@@ -19,6 +19,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   String? selectedUserId;
   bool isLoadingKYC = false;
+  String? userName;
 
   @override
   void initState() {
@@ -41,6 +42,7 @@ class _HomeScreenState extends State<HomeScreen> {
       isLoadingKYC = true;
     });
     await KYCService.fetchKYCDetails(selectedUserId!);
+    userName = KYCService.getUserName();
     await _loadBankAccountsData();
     setState(() {
       isLoadingKYC = false;
@@ -56,7 +58,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _fetchRecentTransactions() async {
     if (selectedUserId == null) return;
-    
+
     setState(() {
       _isLoadingTransactions = true;
     });
@@ -67,36 +69,37 @@ class _HomeScreenState extends State<HomeScreen> {
       if (savingsAccounts.isNotEmpty) {
         final firstAccount = savingsAccounts.first;
         final accountId = firstAccount['accountId'];
-        
+
         if (accountId != null) {
           final statementData = await StatementService.fetchSavingsStatement(
-            selectedUserId!, 
-            accountId
-          );
-          
+              selectedUserId!, accountId);
+
           if (statementData != null && statementData['transactions'] != null) {
-            final transactions = List<Map<String, dynamic>>.from(statementData['transactions']);
+            final transactions =
+                List<Map<String, dynamic>>.from(statementData['transactions']);
             // Sort by date (most recent first) and take latest 3
-            transactions.sort((a, b) => (b['date'] ?? '').compareTo(a['date'] ?? ''));
-            
+            transactions
+                .sort((a, b) => (b['date'] ?? '').compareTo(a['date'] ?? ''));
+
             final latestTransactions = transactions.take(3).map((transaction) {
               final isCredit = transaction['type'] == 'credit';
               final amount = transaction['amount'] ?? 0.0;
-              final narration = transaction['narration']?.isNotEmpty == true 
-                  ? transaction['narration'] 
+              final narration = transaction['narration']?.isNotEmpty == true
+                  ? transaction['narration']
                   : (isCredit ? 'Deposit' : 'Withdrawal');
-              
+
               return {
-                "image": isCredit 
-                    ? "assets/home/logos_paypal.png" 
-                    : "assets/home/fundTransfer.png",
+                "icon": isCredit
+                    ? CupertinoIcons.arrow_down_circle_fill // Deposit
+                    : CupertinoIcons.arrow_up_circle_fill, // Withdrawal
+
                 "name": narration,
                 "title": transaction['date'] ?? 'N/A',
                 "money": amount.toStringAsFixed(2),
                 "isCredit": isCredit
               };
             }).toList();
-            
+
             setState(() {
               _recentTransactions = latestTransactions;
             });
@@ -601,7 +604,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 );
               }).toList(),
-              
+
               // Wallet Account Card
               Container(
                 margin: const EdgeInsets.only(bottom: fixPadding / 2),
@@ -688,24 +691,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 color: whiteColor,
               ),
               widthSpace,
-              const Text(
-                "Finalan Techno",
+              Text(
+                "Hi, ${userName ?? 'User'}",
                 style: interSemibold20White,
               )
             ],
-          ),
-          InkWell(
-            onTap: () {
-              Navigator.pushNamed(context, '/notification');
-            },
-            child: const SizedBox(
-              height: 26,
-              width: 26,
-              child: Icon(
-                CupertinoIcons.bell,
-                color: whiteColor,
-              ),
-            ),
           ),
         ],
       ),
@@ -749,7 +739,7 @@ class OptimizedAccountCard extends StatelessWidget {
     bool isWallet = accountData['accountType'] == 'Digital Wallet';
     bool isSavings = accountData['accountType'] == 'Savings Account';
     bool isLoan = accountData['accountType'] == 'Loan Account';
-    
+
     return Container(
       width: size.width * 0.8,
       padding: const EdgeInsets.symmetric(
@@ -760,36 +750,43 @@ class OptimizedAccountCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(10),
         // Different styling for each account type
         gradient: LinearGradient(
-          colors: isWallet 
-            ? [
-                const Color(0xFF4CAF50).withOpacity(0.15), // Green for wallet
-                const Color(0xFF8BC34A).withOpacity(0.10),
-              ]
-            : isSavings
+          colors: isWallet
               ? [
-                  const Color(0xFF2196F3).withOpacity(0.12), // Blue for savings
-                  const Color(0xFF64B5F6).withOpacity(0.08),
+                  const Color(0xFF4CAF50).withOpacity(0.15), // Green for wallet
+                  const Color(0xFF8BC34A).withOpacity(0.10),
                 ]
-              : isLoan
-                ? [
-                    const Color(0xFFFF9800).withOpacity(0.12), // Orange for loan
-                    const Color(0xFFFFB74D).withOpacity(0.08),
-                  ]
-                : [
-                    const Color(0xFFDEB16C).withOpacity(0.12), // Default colors
-                    const Color(0xFFEC98B3).withOpacity(0.08),
-                  ],
+              : isSavings
+                  ? [
+                      const Color(0xFF2196F3)
+                          .withOpacity(0.12), // Blue for savings
+                      const Color(0xFF64B5F6).withOpacity(0.08),
+                    ]
+                  : isLoan
+                      ? [
+                          const Color(0xFFFF9800)
+                              .withOpacity(0.12), // Orange for loan
+                          const Color(0xFFFFB74D).withOpacity(0.08),
+                        ]
+                      : [
+                          const Color(0xFFDEB16C)
+                              .withOpacity(0.12), // Default colors
+                          const Color(0xFFEC98B3).withOpacity(0.08),
+                        ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         border: Border.all(
-          color: isWallet 
-            ? const Color(0xFF4CAF50).withOpacity(0.7) // Green border for wallet
-            : isSavings
-              ? const Color(0xFF2196F3).withOpacity(0.6) // Blue border for savings
-              : isLoan
-                ? const Color(0xFFFF9800).withOpacity(0.6) // Orange border for loan
-                : const Color(0xFFEC98B3).withOpacity(0.6), // Default border
+          color: isWallet
+              ? const Color(0xFF4CAF50)
+                  .withOpacity(0.7) // Green border for wallet
+              : isSavings
+                  ? const Color(0xFF2196F3)
+                      .withOpacity(0.6) // Blue border for savings
+                  : isLoan
+                      ? const Color(0xFFFF9800)
+                          .withOpacity(0.6) // Orange border for loan
+                      : const Color(0xFFEC98B3)
+                          .withOpacity(0.6), // Default border
           width: 0.8,
         ),
       ),
@@ -862,6 +859,9 @@ class OptimizedTransactionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isCredit = transactionData['isCredit'] ?? false;
+    final Color iconColor = isCredit ? Colors.green : Colors.red;
+
     return Container(
       width: double.maxFinite,
       margin: const EdgeInsets.symmetric(
@@ -882,13 +882,14 @@ class OptimizedTransactionCard extends StatelessWidget {
           Container(
             height: 38,
             width: 38,
-            padding: const EdgeInsets.all(fixPadding / 1.2),
-            decoration: const BoxDecoration(
-              color: Color(0xFFEDEBEB),
+            decoration: BoxDecoration(
+              color: iconColor.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: Image.asset(
-              transactionData['image'].toString(),
+            child: Icon(
+              transactionData['icon'] as IconData,
+              color: iconColor,
+              size: 22,
             ),
           ),
           widthSpace,
@@ -909,15 +910,10 @@ class OptimizedTransactionCard extends StatelessWidget {
               ],
             ),
           ),
-          transactionData['isCredit'] == false
-              ? Text(
-                  "-\₹${transactionData['money']}",
-                  style: bold15Red,
-                )
-              : Text(
-                  "+\₹${transactionData['money']}",
-                  style: bold15Green,
-                )
+          Text(
+            "${isCredit ? '+' : '-'}\₹${transactionData['money']}",
+            style: isCredit ? bold15Green : bold15Red,
+          )
         ],
       ),
     );

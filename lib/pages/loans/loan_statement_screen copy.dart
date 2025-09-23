@@ -9,46 +9,27 @@ class LoanStatementScreen extends StatefulWidget {
   final String phoneNumber;
   final String accountId;
   final String accountType;
-
+  
   const LoanStatementScreen({
-    Key? key,
+    Key? key, 
     required this.phoneNumber,
     required this.accountId,
     required this.accountType,
   }) : super(key: key);
-
+  
   @override
   State<LoanStatementScreen> createState() => _LoanStatementScreenState();
 }
 
-class _LoanStatementScreenState extends State<LoanStatementScreen>
-    with SingleTickerProviderStateMixin {
+class _LoanStatementScreenState extends State<LoanStatementScreen> {
   bool isLoading = true;
   String? errorMessage;
   Map<String, dynamic>? statementData;
 
-  late AnimationController _animationController;
-  late Animation<double> _progressAnimation;
-
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1000),
-    );
-
-    _progressAnimation = Tween<double>(begin: 0.0, end: 0.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
-    );
-
     _fetchStatement();
-  }
-
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
   }
 
   Future<void> _fetchStatement() async {
@@ -63,33 +44,15 @@ class _LoanStatementScreenState extends State<LoanStatementScreen>
         widget.phoneNumber,
         widget.accountId,
       );
-
+      
       if (data != null) {
         setState(() {
           statementData = data;
           isLoading = false;
         });
-
-        // Calculate repayment progress
-        double progress = _calculateRepaymentProgress();
-
-        // Animate progress bar
-        _progressAnimation = Tween<double>(
-          begin: _progressAnimation.value, // current value for smooth animation
-          end: progress,
-        ).animate(
-          CurvedAnimation(
-            parent: _animationController,
-            curve: Curves.easeOut,
-          ),
-        );
-
-        // Start animation
-        _animationController.forward(from: 0.0);
       } else {
         setState(() {
-          errorMessage =
-              StatementService.errorMessage ?? 'Failed to fetch loan statement';
+          errorMessage = StatementService.errorMessage ?? 'Failed to fetch loan statement';
           isLoading = false;
         });
         StatementService.showToast(errorMessage!, isError: true);
@@ -101,28 +64,6 @@ class _LoanStatementScreenState extends State<LoanStatementScreen>
       });
       StatementService.showToast('An error occurred: $e', isError: true);
     }
-  }
-
-// Helper method to calculate repayment progress
-  double _calculateRepaymentProgress() {
-    if (statementData == null || statementData!['transactions'] == null) {
-      return 0.0;
-    }
-
-    final transactions =
-        List<Map<String, dynamic>>.from(statementData!['transactions']);
-    if (transactions.isEmpty) return 0.0;
-
-    final totalEMI = transactions.fold<double>(
-        0.0,
-        (sum, t) => t['type'] == 'debit'
-            ? sum + (t['amount']?.toDouble() ?? 0.0)
-            : sum);
-
-    final loanAmount = statementData!['loanAmount']?.toDouble() ??
-        1.0; // Avoid division by zero
-
-    return (totalEMI / loanAmount).clamp(0.0, 1.0);
   }
 
   @override
@@ -160,45 +101,45 @@ class _LoanStatementScreenState extends State<LoanStatementScreen>
           ),
         ],
       ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : errorMessage != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        errorMessage!,
-                        style: bold16Black33,
-                        textAlign: TextAlign.center,
-                      ),
-                      heightSpace,
-                      ElevatedButton(
-                        onPressed: _fetchStatement,
-                        child: const Text('Retry'),
-                      ),
-                    ],
+      body: isLoading 
+        ? const Center(child: CircularProgressIndicator())
+        : errorMessage != null
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    errorMessage!,
+                    style: bold16Black33,
+                    textAlign: TextAlign.center,
                   ),
-                )
-              : statementData == null
-                  ? const Center(
-                      child: Text('No statement data available'),
-                    )
-                  : ListView(
-                      physics: const BouncingScrollPhysics(),
-                      padding: const EdgeInsets.all(fixPadding * 2),
-                      children: [
-                        _buildLoanSummary(),
-                        heightSpace,
-                        heightSpace,
-                        _buildRepaymentSummary(),
-                        heightSpace,
-                        heightSpace,
-                        _buildTransactionsTitle(),
-                        heightSpace,
-                        _buildTransactionsList(),
-                      ],
-                    ),
+                  heightSpace,
+                  ElevatedButton(
+                    onPressed: _fetchStatement,
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            )
+          : statementData == null
+            ? const Center(
+                child: Text('No statement data available'),
+              )
+            : ListView(
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.all(fixPadding * 2),
+                children: [
+                  _buildLoanSummary(),
+                  heightSpace,
+                  heightSpace,
+                  _buildRepaymentSummary(),
+                  heightSpace,
+                  heightSpace,
+                  _buildTransactionsTitle(),
+                  heightSpace,
+                  _buildTransactionsList(),
+                ],
+              ),
     );
   }
 
@@ -274,10 +215,6 @@ class _LoanStatementScreenState extends State<LoanStatementScreen>
   }
 
   Widget _buildRepaymentSummary() {
-    final totalPaid = _getTotalEMIPaidValue();
-    final remaining = _getRemainingBalanceValue();
-    final emiAmount = _getAverageEMIAmountValue();
-
     return Container(
       padding: const EdgeInsets.all(fixPadding * 1.5),
       decoration: BoxDecoration(
@@ -317,7 +254,7 @@ class _LoanStatementScreenState extends State<LoanStatementScreen>
                       style: semibold14Grey94,
                     ),
                     Text(
-                      '₹${totalPaid.toStringAsFixed(2)}',
+                      _getTotalEMIPaid(),
                       style: bold16Black33,
                     ),
                   ],
@@ -332,7 +269,7 @@ class _LoanStatementScreenState extends State<LoanStatementScreen>
                       style: semibold14Grey94,
                     ),
                     Text(
-                      '₹${emiAmount.toStringAsFixed(2)}',
+                      _getAverageEMIAmount(),
                       style: bold16Black33,
                     ),
                   ],
@@ -347,7 +284,7 @@ class _LoanStatementScreenState extends State<LoanStatementScreen>
                       style: semibold14Grey94,
                     ),
                     Text(
-                      '₹${remaining.toStringAsFixed(2)}',
+                      _getRemainingBalance(),
                       style: bold16Black33,
                     ),
                   ],
@@ -356,20 +293,14 @@ class _LoanStatementScreenState extends State<LoanStatementScreen>
             ],
           ),
           heightSpace,
-          AnimatedBuilder(
-            animation: _animationController,
-            builder: (context, child) {
-              return LinearProgressIndicator(
-                value: _progressAnimation.value,
-                backgroundColor: Colors.grey.withOpacity(0.3),
-                valueColor: const AlwaysStoppedAnimation<Color>(primaryColor),
-                minHeight: 6,
-              );
-            },
+          LinearProgressIndicator(
+            value: _getRepaymentProgress(),
+            backgroundColor: Colors.grey.withOpacity(0.3),
+            valueColor: const AlwaysStoppedAnimation<Color>(primaryColor),
           ),
           heightSpace,
           Text(
-            'Repayment Progress: ${(_progressAnimation.value * 100).toStringAsFixed(1)}%',
+            'Repayment Progress: ${(_getRepaymentProgress() * 100).toStringAsFixed(1)}%',
             style: semibold14Grey94,
           ),
         ],
@@ -386,7 +317,7 @@ class _LoanStatementScreenState extends State<LoanStatementScreen>
 
   Widget _buildTransactionsList() {
     final transactions = statementData!['transactions'] as List<dynamic>? ?? [];
-
+    
     if (transactions.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(fixPadding * 2),
@@ -415,7 +346,7 @@ class _LoanStatementScreenState extends State<LoanStatementScreen>
       itemBuilder: (context, index) {
         final transaction = transactions[index];
         final isPayment = transaction['type'] == 'debit';
-
+        
         return Container(
           margin: const EdgeInsets.only(bottom: fixPadding),
           padding: const EdgeInsets.all(fixPadding),
@@ -495,43 +426,63 @@ class _LoanStatementScreenState extends State<LoanStatementScreen>
     );
   }
 
-  // Helpers
-  double _getTotalEMIPaidValue() {
-    if (statementData == null || statementData!['transactions'] == null)
-      return 0.0;
-    final transactions =
-        List<Map<String, dynamic>>.from(statementData!['transactions']);
+  // Helper methods to calculate values from API data
+  String _getTotalEMIPaid() {
+    if (statementData == null || statementData!['transactions'] == null) return '₹0.00';
+    
+    final transactions = List<Map<String, dynamic>>.from(statementData!['transactions']);
     double total = 0.0;
-    for (var t in transactions) {
-      if (t['type'] == 'debit') total += (t['amount'] ?? 0.0).toDouble();
+    
+    for (var transaction in transactions) {
+      if (transaction['type'] == 'debit') {
+        total += (transaction['amount'] ?? 0.0).toDouble();
+      }
     }
-    return total;
+    
+    return '₹${total.toStringAsFixed(2)}';
   }
 
-  double _getAverageEMIAmountValue() {
-    if (statementData == null || statementData!['transactions'] == null)
-      return 0.0;
-    final transactions =
-        List<Map<String, dynamic>>.from(statementData!['transactions']);
+  String _getAverageEMIAmount() {
+    if (statementData == null || statementData!['transactions'] == null) return '₹0.00';
+    
+    final transactions = List<Map<String, dynamic>>.from(statementData!['transactions']);
     double total = 0.0;
     int count = 0;
-    for (var t in transactions) {
-      if (t['type'] == 'debit') {
-        total += (t['amount'] ?? 0.0).toDouble();
+    
+    for (var transaction in transactions) {
+      if (transaction['type'] == 'debit') {
+        total += (transaction['amount'] ?? 0.0).toDouble();
         count++;
       }
     }
-    if (count == 0) return 0.0;
-    return total / count;
+    
+    if (count == 0) return '₹0.00';
+    return '₹${(total / count).toStringAsFixed(2)}';
   }
 
-  double _getRemainingBalanceValue() {
-    if (statementData == null || statementData!['transactions'] == null)
-      return 0.0;
-    final transactions =
-        List<Map<String, dynamic>>.from(statementData!['transactions']);
-    if (transactions.isEmpty) return 0.0;
+  String _getRemainingBalance() {
+    if (statementData == null || statementData!['transactions'] == null) return '₹0.00';
+    
+    final transactions = List<Map<String, dynamic>>.from(statementData!['transactions']);
+    if (transactions.isEmpty) return '₹0.00';
+    
+    // Get the last transaction's balance (most recent)
     final lastTransaction = transactions.first;
-    return (lastTransaction['balance'] ?? 0.0).toDouble();
+    return '₹${(lastTransaction['balance'] ?? 0.0).toStringAsFixed(2)}';
+  }
+
+  double _getRepaymentProgress() {
+    if (statementData == null || statementData!['transactions'] == null) return 0.0;
+    
+    final transactions = List<Map<String, dynamic>>.from(statementData!['transactions']);
+    if (transactions.isEmpty) return 0.0;
+    
+    // Calculate progress based on total transactions vs completed payments
+    // This is a simplified calculation - you might want to adjust based on your API structure
+    final totalTransactions = transactions.length;
+    final completedPayments = transactions.where((t) => t['type'] == 'debit').length;
+    
+    if (totalTransactions == 0) return 0.0;
+    return completedPayments / totalTransactions;
   }
 }

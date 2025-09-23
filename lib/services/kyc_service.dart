@@ -11,6 +11,10 @@ class KYCService {
   static bool isLoading = false;
   static String? errorMessage;
 
+  static String getUserName() {
+    return kycData?['name'] ?? '';
+  }
+
   // Fetch KYC details for a user
   static Future<Map<String, dynamic>?> fetchKYCDetails(
       String phoneNumber) async {
@@ -24,6 +28,10 @@ class KYCService {
           'Content-Type': 'application/json',
         },
       );
+
+      print("\n\n\n");
+      print(response.body);
+      print("\n\n\n");
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);

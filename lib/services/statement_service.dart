@@ -16,6 +16,10 @@ class StatementService {
     try {
       final response = await http.get(Uri.parse(
           'https://api.cornix.tech/users/$phoneNumber/balance/$accountId'));
+
+      print('\n\n\n');
+      print('https://api.cornix.tech/users/$phoneNumber/balance/$accountId');
+      print('\n\n\n');
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       } else {
@@ -27,7 +31,6 @@ class StatementService {
       return null;
     }
   }
-
 
   // Fetch savings account statement
   static Future<Map<String, dynamic>?> fetchSavingsStatement(
@@ -77,6 +80,9 @@ class StatementService {
           'Content-Type': 'application/json',
         },
       );
+      print('\n\n\n');
+      print('$baseUrl/users/$phoneNumber/statement/loan/$accountId');
+      print('\n\n\n');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);

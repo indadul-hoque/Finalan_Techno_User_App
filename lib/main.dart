@@ -86,11 +86,7 @@ class _MyAppState extends State<MyApp> {
               surfaceTintColor: Colors.transparent,
               backgroundColor: scaffoldBgColor),
         ),
-        home: (widget.phoneNumber == null ||
-                widget.phoneNumber!.isEmpty ||
-                !widget.isLoggedIn)
-            ? const SplashScreen()
-            : const BiometricGate(),
+        home: const SplashScreen(),
         onGenerateRoute: routes,
         locale: _locale,
         supportedLocales: const [
