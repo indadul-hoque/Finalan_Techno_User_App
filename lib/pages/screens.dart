@@ -22,3 +22,6 @@ export 'package:fl_banking_app/pages/Account/near_by_atm.dart';
 export 'package:fl_banking_app/pages/Account/near_by_bank.dart';
 export 'package:fl_banking_app/pages/Account/privacy_policy.dart';
 export 'package:fl_banking_app/pages/Account/terms_condition.dart';
+export 'package:fl_banking_app/pages/loans/loan_repayment.dart';
+export 'package:fl_banking_app/pages/loans/offline.dart';
+export 'package:fl_banking_app/pages/loans/online.dart';

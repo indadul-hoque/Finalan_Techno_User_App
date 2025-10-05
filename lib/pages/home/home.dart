@@ -187,6 +187,12 @@ class _HomeScreenState extends State<HomeScreen> {
       "name": "Deposit",
       "routeName": "/addDeposit",
       "isDetail": true
+    },
+    {
+      "image": "assets/home/loan.png",
+      "name": "Loan Repayment",
+      "routeName": "/loanRepayment",
+      "isDetail": true
     }
   ];
 

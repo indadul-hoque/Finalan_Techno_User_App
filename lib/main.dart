@@ -8,8 +8,6 @@ import 'package:page_transition/page_transition.dart';
 import 'package:fl_banking_app/pages/screens.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:fl_banking_app/widgets/biometric_gate.dart';
-
 String? phoneNumber;
 
 void main() async {
@@ -221,6 +219,30 @@ class _MyAppState extends State<MyApp> {
           type: PageTransitionType.rightToLeft,
           settings: settings,
         );
+      case '/loanRepayment':
+        return PageTransition(
+          child: const LoanRepayment(),
+          type: PageTransitionType.rightToLeft,
+          settings: settings,
+        );
+      case '/offline':
+        return PageTransition(
+          child: const Offline(),
+          type: PageTransitionType.rightToLeft,
+          settings: settings,
+        );
+      case '/online':
+        final args = settings.arguments
+            as Map<String, dynamic>; // Pass arguments as a map
+        return PageTransition(
+          child: Online(
+            selectedLoanId: args['selectedLoanId'], // Expected named parameter
+            amount: args['amount'], // Pass the amount here
+          ),
+          type: PageTransitionType.rightToLeft,
+          settings: settings,
+        );
+
       default:
         return null;
     }

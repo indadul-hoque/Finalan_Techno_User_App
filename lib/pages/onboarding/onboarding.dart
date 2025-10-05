@@ -26,7 +26,7 @@ class OnboardingScreenState extends State<OnboardingScreen> {
     super.initState();
 
     // Auto-slide every 4 seconds
-    _timer = Timer.periodic(const Duration(seconds: 4), (timer) {
+    _timer = Timer.periodic(const Duration(seconds: 2), (timer) {
       if (_pageController.hasClients) {
         int nextPage = currentPage + 1;
         if (nextPage >= 3) nextPage = 0;
