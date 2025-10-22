@@ -88,6 +88,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   ? transaction['narration']
                   : (isCredit ? 'Deposit' : 'Withdrawal');
 
+              // Safely handle amount that could be string or num
+              double? amountValue;
+              if (amount is num) {
+                amountValue = amount.toDouble();
+              } else if (amount is String) {
+                amountValue = double.tryParse(amount);
+              }
+
               return {
                 "icon": isCredit
                     ? CupertinoIcons.arrow_down_circle_fill // Deposit
@@ -95,7 +103,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                 "name": narration,
                 "title": transaction['date'] ?? 'N/A',
-                "money": amount.toStringAsFixed(2),
+                "money": amountValue?.toStringAsFixed(2) ?? '0.00',
                 "isCredit": isCredit
               };
             }).toList();
@@ -203,10 +211,10 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_recentTransactions.isEmpty) {
       return [
         {
-          "image": "assets/home/fundTransfer.png",
+          "icon": Icons.info, // Use a valid IconData
           "name": "No transactions",
           "title": "Pull to refresh",
-          "money": 0,
+          "money": "0.00", // Ensure string format
           "isCredit": false
         }
       ];
@@ -868,6 +876,13 @@ class OptimizedTransactionCard extends StatelessWidget {
     final isCredit = transactionData['isCredit'] ?? false;
     final Color iconColor = isCredit ? Colors.green : Colors.red;
 
+    // Safely handle the icon, default to Icons.info if not valid
+    final IconData icon = transactionData['icon'] is IconData
+        ? transactionData['icon'] as IconData
+        : (isCredit
+            ? CupertinoIcons.arrow_down_circle_fill
+            : CupertinoIcons.arrow_up_circle_fill);
+
     return Container(
       width: double.maxFinite,
       margin: const EdgeInsets.symmetric(
@@ -893,7 +908,7 @@ class OptimizedTransactionCard extends StatelessWidget {
               shape: BoxShape.circle,
             ),
             child: Icon(
-              transactionData['icon'] as IconData,
+              icon,
               color: iconColor,
               size: 22,
             ),

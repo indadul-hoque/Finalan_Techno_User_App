@@ -4,7 +4,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:flutter/material.dart';
 
 class StatementService {
-  static const String baseUrl = 'https://api.cornix.tech';
+  static const String baseUrl = 'https://finalan-techno-api-879235286268.asia-south1.run.app/';
 
   // Statement Model
   static Map<String, dynamic>? statementData;
@@ -15,7 +15,7 @@ class StatementService {
       String phoneNumber, String accountId) async {
     try {
       final response = await http.get(Uri.parse(
-          'https://api.cornix.tech/users/$phoneNumber/balance/$accountId'));
+          'https://finalan-techno-api-879235286268.asia-south1.run.app/users/$phoneNumber/balance/$accountId'));
 
       print('\n\n\n');
       print('https://api.cornix.tech/users/$phoneNumber/balance/$accountId');
@@ -45,12 +45,14 @@ class StatementService {
           'Content-Type': 'application/json',
         },
       );
+      print(response.body);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['message'] == 'Transactions fetched successfully.') {
           statementData = data;
           return statementData;
+          
         } else {
           errorMessage = data['message'] ?? 'Failed to fetch statement';
           return null;
@@ -182,7 +184,15 @@ class StatementService {
   // Format amount for display
   static String formatAmount(dynamic amount) {
     if (amount == null) return '₹0.00';
-    return '₹${amount.toStringAsFixed(2)}';
+    
+    double? amountValue;
+    if (amount is num) {
+      amountValue = amount.toDouble();
+    } else if (amount is String) {
+      amountValue = double.tryParse(amount);
+    }
+    
+    return '₹${amountValue?.toStringAsFixed(2) ?? '0.00'}';
   }
 
   // Show toast message

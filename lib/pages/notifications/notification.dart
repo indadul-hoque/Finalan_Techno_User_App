@@ -150,7 +150,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
-                        notifications[index]['icon'] as IconData,
+                        notifications[index]['icon'] as IconData? ?? Icons.notifications,
                         color: whiteColor,
                         size: 14,
                       ),

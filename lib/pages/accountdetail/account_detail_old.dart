@@ -27,7 +27,7 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
   static const Map<String, List<String>> _uiTypeToApiTypes = {
     'Savings Account': ['savings'],
     'Daily Savings Account': ['daily-savings'],
-    'Thrift Fund': ['thrift-fund'],
+    'Thrift Fund': ['thrift-fund'], 
     'Fixed Deposit': ['fixed-deposit'],
     'Loan Account': ['loan'],
     'Group Loan Account': ['group-loan']

@@ -27,47 +27,57 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // Function to handle the API call
   Future<void> _handleLogin() async {
-    // Check if the phone number is entered
-    String? phoneNumber = phoneController.text;
-    if (phoneNumber.isEmpty) {
-      _showToast('Please enter your phone number.');
-      return;
-    }
-    setState(() {
-      _isLoading = true;
-    });
-    final url = Uri.parse('https://api.cornix.tech/login');
+  // Get the phone number from the controller
+  String? phoneNumber = phoneController.text.trim();
 
-    try {
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'phone_number': phoneNumber}),
-      );
-      print("\n\n\n\n");
-      print(response.body);
-      print("\n\n\n\n");
-
-      if (response.statusCode == 200) {
-        // API call was successful
-        final responseData = jsonDecode(response.body);
-        print('Login successful: $responseData');
-        _showToast('OTP sent successfully!');
-
-        // Navigate to the OTP screen, passing the phone number for verification
-        Navigator.pushNamed(context, '/otp', arguments: phoneNumber);
-      } else {
-        _showToast('Sign Up first to use the Application!');
-      }
-    } catch (e) {
-      print('An error occurred: $e');
-      _showToast('An error occurred. Check your connection.');
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
+  // Check if the phone number is empty
+  if (phoneNumber.isEmpty) {
+    _showToast('Please enter your phone number.');
+    return;
   }
+
+  // Ensure the phone number starts with +91
+  if (!phoneNumber.startsWith('91')) {
+    phoneNumber = '91$phoneNumber';
+  }
+
+  setState(() {
+    _isLoading = true;
+  });
+
+  final url = Uri.parse('https://finalan-techno-api-879235286268.asia-south1.run.app/login');
+
+  try {
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'phone_number': phoneNumber}),
+    );
+     print(phoneNumber);
+    print("\n\n\n\n");
+    print(response.body);
+    print("\n\n\n\n");
+
+    if (response.statusCode == 200) {
+      // API call was successful
+      final responseData = jsonDecode(response.body);
+      print('Login successful: $responseData');
+      _showToast('OTP sent successfully!');
+
+      // Navigate to the OTP screen, passing the phone number for verification
+      Navigator.pushNamed(context, '/otp', arguments: phoneNumber);
+    } else {
+      _showToast('Sign Up first to use the Application!');
+    }
+  } catch (e) {
+    print('An error occurred: $e');
+    _showToast('An error occurred. Check your connection.');
+  } finally {
+    setState(() {
+      _isLoading = false;
+    });
+  }
+}
 
   void _showToast(String message) {
     Fluttertoast.showToast(

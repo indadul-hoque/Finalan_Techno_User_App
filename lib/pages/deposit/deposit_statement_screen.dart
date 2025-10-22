@@ -19,11 +19,13 @@ class StatementService {
     try {
       final response = await http.get(
         Uri.parse(
-            'https://api.cornix.tech/users/$phoneNumber/balance/$accountId'),
+            'https://finalan-techno-api-879235286268.asia-south1.run.app/users/$phoneNumber/balance/$accountId'),
       );
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       } else {
+        errorMessage = 'Balance fetch failed: ${response.statusCode} - ${response.body}';
+        print('StatementService.fetchBalance error: ${response.statusCode} -> ${response.body}');
         return null;
       }
     } catch (e) {
@@ -37,12 +39,14 @@ class StatementService {
     try {
       final response = await http.get(
         Uri.parse(
-            'https://api.cornix.tech/users/$phoneNumber/statement/savings/$accountId'),
+            'https://finalan-techno-api-879235286268.asia-south1.run.app/users/$phoneNumber/statement/savings/$accountId'),
       );
       print("\nStatement Response:\n${response.body}\n");
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       } else {
+        errorMessage = 'Statement fetch failed: ${response.statusCode} - ${response.body}';
+        print('StatementService.fetchSavingsStatement error: ${response.statusCode} -> ${response.body}');
         return null;
       }
     } catch (e) {
@@ -69,6 +73,19 @@ class DepositStatementScreen extends StatefulWidget {
 }
 
 class _DepositStatementScreenState extends State<DepositStatementScreen> {
+  // Helper method to format amount values that could be String or num
+  String _formatAmount(dynamic value) {
+    if (value == null) return '0.00';
+    
+    double numValue = 0.0;
+    if (value is String) {
+      numValue = double.tryParse(value) ?? 0.0;
+    } else if (value is num) {
+      numValue = value.toDouble();
+    }
+    
+    return numValue.toStringAsFixed(2);
+  }
   bool isLoading = true;
   String? errorMessage;
   Map<String, dynamic>? statementData;
@@ -117,8 +134,12 @@ class _DepositStatementScreenState extends State<DepositStatementScreen> {
       } else {
         setState(() {
           isLoading = false;
-          errorMessage = 'Failed to fetch data. Please try again.';
+          // Prefer the detailed message from StatementService if available.
+          errorMessage = StatementService.errorMessage ?? 'Failed to fetch data. Please try again.';
         });
+        if (StatementService.errorMessage != null) {
+          print('StatementService reported: ${StatementService.errorMessage}');
+        }
         StatementService.showToast(errorMessage!, isError: true);
       }
     } catch (e) {
@@ -366,8 +387,8 @@ class _DepositStatementScreenState extends State<DepositStatementScreen> {
                     children: [
                       Text(
                         isCredit
-                            ? '+₹${transaction['amount']?.toStringAsFixed(2) ?? '0.00'}'
-                            : '-₹${transaction['amount']?.toStringAsFixed(2) ?? '0.00'}',
+                            ? '+₹${(transaction['amount'] is num ? (transaction['amount'] as num).toDouble() : double.tryParse(transaction['amount'].toString()))?.toStringAsFixed(2) ?? '0.00'}'
+                            : '-₹${(transaction['amount'] is num ? (transaction['amount'] as num).toDouble() : double.tryParse(transaction['amount'].toString()))?.toStringAsFixed(2) ?? '0.00'}',
                         style: TextStyle(
                           color: isCredit ? Colors.green : Colors.red,
                           fontWeight: FontWeight.bold,
@@ -375,7 +396,7 @@ class _DepositStatementScreenState extends State<DepositStatementScreen> {
                         ),
                       ),
                       Text(
-                        'Balance: ₹${transaction['balance']?.toStringAsFixed(2) ?? '0.00'}',
+                        'Balance: ₹${(transaction['balance'] is num ? (transaction['balance'] as num).toDouble() : double.tryParse(transaction['balance'].toString()))?.toStringAsFixed(2) ?? '0.00'}',
                         style: semibold14Grey94,
                       ),
                     ],

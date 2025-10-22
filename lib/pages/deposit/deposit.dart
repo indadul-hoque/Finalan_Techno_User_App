@@ -148,10 +148,10 @@ class _DepositScreenState extends State<DepositScreen> {
     return ColumnBuilder(
       itemBuilder: (context, index) {
         final account = savingsAccounts[index];
-        final planDetails = account['planDetails'] ?? {};
-        final balance = account['balance'] ?? 0.0;
-        final openingDate = account['openingDate'] ?? 'N/A';
-        final interestRate = planDetails['annualInterestRate'] ?? '0';
+  final planDetails = account['planDetails'] ?? {};
+  final balance = account['balance'] ?? 0.0;
+  final openingDate = account['openingDate']?.toString() ?? 'N/A';
+  final interestRate = planDetails['annualInterestRate']?.toString() ?? '0';
 
         return Container(
           margin: const EdgeInsets.symmetric(
@@ -191,14 +191,14 @@ class _DepositScreenState extends State<DepositScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            planDetails['schemeName'] ?? 'Savings Account',
+                            planDetails['schemeName']?.toString() ?? 'Savings Account',
                             style: bold16Black33,
                             overflow: TextOverflow.ellipsis,
                             maxLines: 1,
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            account['accountId'] ?? 'N/A',
+                            account['accountId']?.toString() ?? 'N/A',
                             style: semibold14Grey94,
                             overflow: TextOverflow.ellipsis,
                             maxLines: 1,
@@ -255,7 +255,8 @@ class _DepositScreenState extends State<DepositScreen> {
                       MaterialPageRoute(
                         builder: (context) => DepositStatementScreen(
                           phoneNumber: widget.phoneNumber ?? '9519874704',
-                          accountId: account['accountId'],
+                          // Ensure accountId is a String (some API responses may return a Map or int)
+                          accountId: account['accountId']?.toString() ?? 'N/A',
                           accountType: 'savings',
                         ),
                       ),
@@ -286,7 +287,7 @@ class _DepositScreenState extends State<DepositScreen> {
     );
   }
 
-  infoWidget(String title, String detail) {
+    infoWidget(String title, dynamic detail) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -298,7 +299,7 @@ class _DepositScreenState extends State<DepositScreen> {
         ),
         const SizedBox(height: 4),
         Text(
-          detail,
+          detail?.toString() ?? '',
           style: semibold16Black33,
           overflow: TextOverflow.ellipsis,
           maxLines: 1,

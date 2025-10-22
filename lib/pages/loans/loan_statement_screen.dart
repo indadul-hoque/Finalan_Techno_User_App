@@ -103,7 +103,7 @@ class _LoanStatementScreenState extends State<LoanStatementScreen>
     }
   }
 
-// Helper method to calculate repayment progress
+  // Helper method to calculate repayment progress
   double _calculateRepaymentProgress() {
     if (statementData == null || statementData!['transactions'] == null) {
       return 0.0;
@@ -119,10 +119,28 @@ class _LoanStatementScreenState extends State<LoanStatementScreen>
             ? sum + (t['amount']?.toDouble() ?? 0.0)
             : sum);
 
-    final loanAmount = statementData!['loanAmount']?.toDouble() ??
-        1.0; // Avoid division by zero
+    // Safely parse loanAmount which could be a String or num
+    double loanAmountValue = 1.0; // Default to avoid division by zero
+    var loanAmount = statementData!['loanAmount'];
+    if (loanAmount is String) {
+      loanAmountValue = double.tryParse(loanAmount) ?? 1.0;
+    } else if (loanAmount is num) {
+      loanAmountValue = loanAmount.toDouble();
+    }
 
-    return (totalEMI / loanAmount).clamp(0.0, 1.0);
+    return (totalEMI / loanAmountValue).clamp(0.0, 1.0);
+  }
+
+  // Utility function to format numbers
+  String formatNumber(dynamic value) {
+    if (value == null) return '₹0.00';
+    double numValue = 0.0;
+    if (value is String) {
+      numValue = double.tryParse(value) ?? 0.0;
+    } else if (value is num) {
+      numValue = value.toDouble();
+    }
+    return '₹${numValue.toStringAsFixed(2)}';
   }
 
   @override
@@ -317,7 +335,7 @@ class _LoanStatementScreenState extends State<LoanStatementScreen>
                       style: semibold14Grey94,
                     ),
                     Text(
-                      '₹${totalPaid.toStringAsFixed(2)}',
+                      formatNumber(totalPaid), // Use formatNumber
                       style: bold16Black33,
                     ),
                   ],
@@ -332,7 +350,7 @@ class _LoanStatementScreenState extends State<LoanStatementScreen>
                       style: semibold14Grey94,
                     ),
                     Text(
-                      '₹${emiAmount.toStringAsFixed(2)}',
+                      formatNumber(emiAmount), // Use formatNumber
                       style: bold16Black33,
                     ),
                   ],
@@ -347,7 +365,7 @@ class _LoanStatementScreenState extends State<LoanStatementScreen>
                       style: semibold14Grey94,
                     ),
                     Text(
-                      '₹${remaining.toStringAsFixed(2)}',
+                      formatNumber(remaining), // Use formatNumber
                       style: bold16Black33,
                     ),
                   ],
@@ -416,6 +434,24 @@ class _LoanStatementScreenState extends State<LoanStatementScreen>
         final transaction = transactions[index];
         final isPayment = transaction['type'] == 'debit';
 
+        // Safely parse amount
+        double amountValue = 0.0;
+        var amt = transaction['amount'];
+        if (amt is String) {
+          amountValue = double.tryParse(amt) ?? 0.0;
+        } else if (amt is num) {
+          amountValue = amt.toDouble();
+        }
+
+        // Safely parse balance
+        double balanceValue = 0.0;
+        var bal = transaction['balance'];
+        if (bal is String) {
+          balanceValue = double.tryParse(bal) ?? 0.0;
+        } else if (bal is num) {
+          balanceValue = bal.toDouble();
+        }
+
         return Container(
           margin: const EdgeInsets.only(bottom: fixPadding),
           padding: const EdgeInsets.all(fixPadding),
@@ -474,7 +510,7 @@ class _LoanStatementScreenState extends State<LoanStatementScreen>
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    '-₹${transaction['amount']?.toStringAsFixed(2) ?? '0.00'}',
+                    '-${formatNumber(amountValue)}', // Use formatNumber
                     style: const TextStyle(
                       color: Colors.orange,
                       fontWeight: FontWeight.bold,
@@ -482,7 +518,7 @@ class _LoanStatementScreenState extends State<LoanStatementScreen>
                     ),
                   ),
                   Text(
-                    'Balance: ₹${transaction['balance']?.toStringAsFixed(2) ?? '0.00'}',
+                    'Balance: ${formatNumber(balanceValue)}', // Use formatNumber
                     style: semibold14Grey94,
                   ),
                 ],
@@ -497,41 +533,56 @@ class _LoanStatementScreenState extends State<LoanStatementScreen>
 
   // Helpers
   double _getTotalEMIPaidValue() {
-    if (statementData == null || statementData!['transactions'] == null)
-      return 0.0;
-    final transactions =
-        List<Map<String, dynamic>>.from(statementData!['transactions']);
+    if (statementData == null || statementData!['transactions'] == null) return 0.0;
+    final transactions = List<Map<String, dynamic>>.from(statementData!['transactions']);
     double total = 0.0;
     for (var t in transactions) {
-      if (t['type'] == 'debit') total += (t['amount'] ?? 0.0).toDouble();
+      if (t['type'] == 'debit') {
+        var amt = t['amount'];
+        double value = 0.0;
+        if (amt is String) {
+          value = double.tryParse(amt) ?? 0.0; // Safely parse String to double
+        } else if (amt is num) {
+          value = amt.toDouble();
+        }
+        total += value;
+      }
     }
     return total;
   }
 
   double _getAverageEMIAmountValue() {
-    if (statementData == null || statementData!['transactions'] == null)
-      return 0.0;
-    final transactions =
-        List<Map<String, dynamic>>.from(statementData!['transactions']);
+    if (statementData == null || statementData!['transactions'] == null) return 0.0;
+    final transactions = List<Map<String, dynamic>>.from(statementData!['transactions']);
     double total = 0.0;
     int count = 0;
     for (var t in transactions) {
       if (t['type'] == 'debit') {
-        total += (t['amount'] ?? 0.0).toDouble();
+        var amt = t['amount'];
+        double value = 0.0;
+        if (amt is String) {
+          value = double.tryParse(amt) ?? 0.0; // Safely parse String to double
+        } else if (amt is num) {
+          value = amt.toDouble();
+        }
+        total += value;
         count++;
       }
     }
-    if (count == 0) return 0.0;
-    return total / count;
+    return count == 0 ? 0.0 : total / count;
   }
 
   double _getRemainingBalanceValue() {
-    if (statementData == null || statementData!['transactions'] == null)
-      return 0.0;
-    final transactions =
-        List<Map<String, dynamic>>.from(statementData!['transactions']);
+    if (statementData == null || statementData!['transactions'] == null) return 0.0;
+    final transactions = List<Map<String, dynamic>>.from(statementData!['transactions']);
     if (transactions.isEmpty) return 0.0;
     final lastTransaction = transactions.first;
-    return (lastTransaction['balance'] ?? 0.0).toDouble();
+    var bal = lastTransaction['balance'];
+    if (bal is String) {
+      return double.tryParse(bal) ?? 0.0; // Safely parse String to double
+    } else if (bal is num) {
+      return bal.toDouble();
+    }
+    return 0.0;
   }
 }

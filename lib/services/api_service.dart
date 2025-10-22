@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class ApiService {
-  static const String baseUrl = "http://your-server-ip:5000";
+  static const String baseUrl = "https://finalan-techno-api-879235286268.asia-south1.run.app/";
 
   // Fetch user accounts - you’ll need a separate endpoint for this
   static Future<List<dynamic>> fetchAccounts(String mobile) async {

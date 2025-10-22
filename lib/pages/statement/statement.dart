@@ -12,7 +12,7 @@ class StatementScreen extends StatefulWidget {
 }
 
 class _StatementScreenState extends State<StatementScreen> {
-  static const String baseUrl = "https://api.cornix.tech";
+  static const String baseUrl = "https://finalan-techno-api-879235286268.asia-south1.run.app/";
 
   String? mobile;
   List<Map<String, dynamic>> accounts = [];

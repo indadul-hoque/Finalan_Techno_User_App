@@ -4,7 +4,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:flutter/material.dart';
 
 class KYCService {
-  static const String baseUrl = 'https://api.cornix.tech';
+  static const String baseUrl = 'https://finalan-techno-api-879235286268.asia-south1.run.app/';
 
   // KYC Model
   static Map<String, dynamic>? kycData;

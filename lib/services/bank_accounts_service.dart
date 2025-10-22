@@ -4,7 +4,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:flutter/material.dart';
 
 class BankAccountsService {
-  static const String baseUrl = 'https://api.cornix.tech';
+  static const String baseUrl = 'https://finalan-techno-api-879235286268.asia-south1.run.app/';
 
   // Bank Accounts Model
   static List<Map<String, dynamic>>? accounts;
@@ -28,7 +28,24 @@ class BankAccountsService {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['message'] == 'Accounts fetched successfully.') {
-          accounts = List<Map<String, dynamic>>.from(data['accounts']);
+          // Normalize accounts data to ensure consistent types
+          final rawAccounts = List<Map<String, dynamic>>.from(data['accounts']);
+          accounts = rawAccounts.map((acct) {
+            final normalized = Map<String, dynamic>.from(acct);
+            // Ensure accountId is a String
+            if (normalized['accountId'] != null) {
+              normalized['accountId'] = normalized['accountId'].toString();
+            }
+            // Normalize balance to either num or string representation
+            final bal = normalized['balance'];
+            if (bal is String) {
+              final parsed = double.tryParse(bal);
+              if (parsed != null) {
+                normalized['balance'] = parsed;
+              }
+            }
+            return normalized;
+          }).toList();
           return accounts;
         } else {
           errorMessage = data['message'] ?? 'Failed to fetch bank accounts';
@@ -133,7 +150,15 @@ class BankAccountsService {
   // Format balance for display
   static String formatBalance(dynamic balance) {
     if (balance == null) return '₹0.00';
-    return '₹${balance.toStringAsFixed(2)}';
+    
+    double? balanceValue;
+    if (balance is num) {
+      balanceValue = balance.toDouble();
+    } else if (balance is String) {
+      balanceValue = double.tryParse(balance);
+    }
+    
+    return '₹${balanceValue?.toStringAsFixed(2) ?? '0.00'}';
   }
 
   // Format date for display
