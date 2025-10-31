@@ -7,7 +7,7 @@ class ApiService {
   // Fetch user accounts - you’ll need a separate endpoint for this
   static Future<List<dynamic>> fetchAccounts(String mobile) async {
     final response =
-        await http.get(Uri.parse("$baseUrl/users/$mobile/accounts"));
+        await http.get(Uri.parse("$baseUrl/user/$mobile/accounts"));
     if (response.statusCode == 200) {
       return json.decode(response.body)['accounts'];
     } else {

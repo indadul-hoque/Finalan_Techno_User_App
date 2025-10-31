@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:fl_banking_app/localization/localization_const.dart';
+import 'package:fl_banking_app/pages/bottomNavigation.dart/bottom_navigation.dart';
 import 'package:flutter/material.dart';
 import 'package:pinput/pinput.dart';
 import 'package:shape_of_view_null_safe/shape_of_view_null_safe.dart';
@@ -76,8 +77,8 @@ class _OtpVerificationState extends State<OtpVerification> {
 
     setState(() => _isLoading = true);
 
-    final url =
-        Uri.parse('https://finalan-techno-api-879235286268.asia-south1.run.app/verify/$_phoneNumber/otp/$otp');
+    final url = Uri.parse(
+        'https://finalan-techno-api-879235286268.asia-south1.run.app/verify/$_phoneNumber/otp/$otp');
 
     try {
       final response = await http.get(url);
@@ -86,6 +87,9 @@ class _OtpVerificationState extends State<OtpVerification> {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString('phoneNumber', _phoneNumber!);
         await prefs.setBool('isLoggedIn', true);
+
+        // Print phone number to console after successful OTP verification
+        print('Phone number after OTP verification: $_phoneNumber');
 
         final authService = AuthService();
         final hasBiometrics = await authService.hasBiometricCapability();
@@ -117,8 +121,16 @@ class _OtpVerificationState extends State<OtpVerification> {
           }
         }
 
-        Navigator.pushNamedAndRemoveUntil(
-            context, '/bottomNavigation', (route) => false);
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(
+            builder: (context) => BottomNavigationScreen(
+              phoneNumber: _phoneNumber,
+              id: 0,
+            ),
+          ),
+          (route) => false,
+        );
       } else {
         final responseData = jsonDecode(response.body);
         _showToast(responseData['message'] ?? 'Invalid OTP. Please try again.');

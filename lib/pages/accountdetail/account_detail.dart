@@ -1,6 +1,8 @@
+import 'package:fl_banking_app/pages/deposit/deposit_statement_screen.dart';
+import 'package:fl_banking_app/pages/home/widgets/kycstatus/kyc_service.dart';
+import 'package:fl_banking_app/pages/loans/loan_statement_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_banking_app/services/bank_accounts_service.dart';
-import 'package:fl_banking_app/services/kyc_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AccountDetailScreen extends StatefulWidget {
@@ -22,6 +24,7 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
   List<Map<String, dynamic>> _allAccounts = [];
   bool _isLoading = true;
   String? _errorMessage;
+  SharedPreferences? _prefs; // Move this to the top with other state variables
 
   @override
   void initState() {
@@ -37,8 +40,9 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
         _errorMessage = null;
       });
 
-      final prefs = await SharedPreferences.getInstance();
-      final phone = prefs.getString('phoneNumber') ?? '9519874704';
+      // Assign SharedPreferences to _prefs
+      _prefs = await SharedPreferences.getInstance();
+      final phone = _prefs!.getString('phoneNumber') ?? '9519874704';
 
       // Fetch KYC for holder name
       await KYCService.fetchKYCDetails(phone);
@@ -172,127 +176,227 @@ class _AccountDetailScreenState extends State<AccountDetailScreen> {
             final typeColor = Colors.blue.shade50;
             final typeLabelColor = Colors.blue.shade700;
 
-            return Card(
-              clipBehavior: Clip.antiAlias,
-              margin: const EdgeInsets.only(bottom: 14),
-              elevation: 3,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Header
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 12),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Colors.grey.shade100, Colors.white],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
+            // Check if this is a loan account
+            final bool isLoanAccount = type.toLowerCase() == 'loan' ||
+                type.toLowerCase().contains('loan');
+
+            return GestureDetector(
+              onTap: () {
+                final phone = _prefs?.getString('phoneNumber') ?? '9519874704';
+                final accountId =
+                    (item['accountId'] ?? item['account'] ?? '').toString();
+                final accountType = type; // Already computed above
+
+                if (accountType.toLowerCase() == 'loan' ||
+                    accountType.toLowerCase().contains('loan')) {
+                  // Navigate to Loan statement screen
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => LoanStatementScreen(
+                        phoneNumber: phone,
+                        accountId: accountId,
+                        accountType: accountType,
                       ),
                     ),
-                    child: Row(
-                      children: [
-                        Container(
-                          height: 36,
-                          width: 36,
-                          decoration: BoxDecoration(
-                            color: Colors.blue.shade600,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Icon(Icons.account_balance_wallet,
-                              color: Colors.white, size: 20),
+                  );
+                } else {
+                  // Navigate to Deposit statement screen
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => DepositStatementScreen(
+                        phoneNumber: phone,
+                        accountId: accountId,
+                        accountType: accountType,
+                      ),
+                    ),
+                  );
+                }
+              },
+              child: Card(
+                clipBehavior: Clip.antiAlias,
+                margin: const EdgeInsets.only(bottom: 14),
+                elevation: 3,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 12),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Colors.grey.shade100, Colors.white],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            height: 36,
+                            width: 36,
+                            decoration: BoxDecoration(
+                              color: isLoanAccount
+                                  ? Colors.orange.shade600
+                                  : Colors.blue.shade600,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(
+                              isLoanAccount
+                                  ? Icons.credit_card
+                                  : Icons.account_balance_wallet,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  (item['accountId'] ?? item['account'] ?? '—')
+                                      .toString(),
+                                  style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  BankAccountsService.formatBalance(
+                                      balanceValue.toDouble()),
+                                  style: TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.grey.shade700,
+                                      fontWeight: FontWeight.w600),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Wrap(
+                            spacing: 8,
                             children: [
-                              Text(
-                                (item['accountId'] ?? item['account'] ?? '—')
-                                    .toString(),
-                                style: const TextStyle(
-                                    fontSize: 16, fontWeight: FontWeight.w700),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: typeColor,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  displayType,
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: typeLabelColor),
+                                ),
                               ),
-                              const SizedBox(height: 2),
-                              Text(
-                                BankAccountsService.formatBalance(
-                                    balanceValue.toDouble()),
-                                style: TextStyle(
-                                    fontSize: 13,
-                                    color: Colors.grey.shade700,
-                                    fontWeight: FontWeight.w600),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: statusColor,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  statusText,
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: statusLabelColor),
+                                ),
                               ),
                             ],
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        Wrap(
-                          spacing: 8,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 10, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: typeColor,
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Text(
-                                displayType,
-                                style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700,
-                                    color: typeLabelColor),
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 10, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: statusColor,
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Text(
-                                statusText,
-                                style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700,
-                                    color: statusLabelColor),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
 
-                  const Divider(height: 1),
+                    const Divider(height: 1),
 
-                  // Body rows
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(14, 12, 14, 4),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        detailTile(
-                            'Account number or id',
-                            (item['accountId'] ?? item['account'] ?? '—')
-                                .toString()),
-                        detailTile('Holder name',
-                            (KYCService.kycData?['name'] ?? '—').toString()),
-                        detailTile(
-                            'Balance',
-                            BankAccountsService.formatBalance(
-                                balanceValue.toDouble())),
-                        detailTile('Status', statusText),
-                        detailTile('Type', displayType),
-                        const SizedBox(height: 6),
-                      ],
+                    // Body rows
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(14, 12, 14, 4),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          detailTile(
+                              'Account number or id',
+                              (item['accountId'] ?? item['account'] ?? '—')
+                                  .toString()),
+                          detailTile('Holder name',
+                              (KYCService.kycData?['name'] ?? '—').toString()),
+                          detailTile(
+                              isLoanAccount ? 'Remaining Balance' : 'Balance',
+                              BankAccountsService.formatBalance(
+                                  balanceValue.toDouble())),
+                          detailTile('Status', statusText),
+                          detailTile('Type', displayType),
+
+                          // Show loan-specific details
+                          if (isLoanAccount && item['loanAmount'] != null)
+                            detailTile(
+                                'Loan Amount',
+                                BankAccountsService.formatBalance(
+                                    item['loanAmount'])),
+
+                          if (isLoanAccount && item['emiAmount'] != null)
+                            detailTile(
+                                'EMI Amount',
+                                BankAccountsService.formatBalance(
+                                    item['emiAmount'])),
+
+                          const SizedBox(height: 10),
+
+                          // Add visual indicator for loan accounts
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.shade50,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                  color: Colors.blue.shade200, width: 1),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.visibility,
+                                  size: 16,
+                                  color: Colors.blue.shade700,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  isLoanAccount
+                                      ? 'Tap to view loan statement'
+                                      : 'Tap to view statement',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.blue.shade700,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Icon(
+                                  Icons.arrow_forward_ios,
+                                  size: 12,
+                                  color: Colors.blue.shade700,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             );
           },

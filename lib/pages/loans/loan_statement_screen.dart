@@ -58,7 +58,6 @@ class _LoanStatementScreenState extends State<LoanStatementScreen>
         errorMessage = null;
       });
 
-      // Fetch real loan statement data from API
       final data = await StatementService.fetchLoanStatement(
         widget.phoneNumber,
         widget.accountId,
@@ -70,12 +69,9 @@ class _LoanStatementScreenState extends State<LoanStatementScreen>
           isLoading = false;
         });
 
-        // Calculate repayment progress
         double progress = _calculateRepaymentProgress();
-
-        // Animate progress bar
         _progressAnimation = Tween<double>(
-          begin: _progressAnimation.value, // current value for smooth animation
+          begin: _progressAnimation.value,
           end: progress,
         ).animate(
           CurvedAnimation(
@@ -84,7 +80,6 @@ class _LoanStatementScreenState extends State<LoanStatementScreen>
           ),
         );
 
-        // Start animation
         _animationController.forward(from: 0.0);
       } else {
         setState(() {
@@ -103,44 +98,22 @@ class _LoanStatementScreenState extends State<LoanStatementScreen>
     }
   }
 
-  // Helper method to calculate repayment progress
   double _calculateRepaymentProgress() {
     if (statementData == null || statementData!['transactions'] == null) {
       return 0.0;
     }
 
-    final transactions =
-        List<Map<String, dynamic>>.from(statementData!['transactions']);
+    final transactions = List<Map<String, dynamic>>.from(statementData!['transactions']);
     if (transactions.isEmpty) return 0.0;
 
-    final totalEMI = transactions.fold<double>(
-        0.0,
-        (sum, t) => t['type'] == 'debit'
-            ? sum + (t['amount']?.toDouble() ?? 0.0)
-            : sum);
+    final totalRepaid = _getTotalEMIPaidValue();
+    final loanAmount = _getLoanAmountValue();
 
-    // Safely parse loanAmount which could be a String or num
-    double loanAmountValue = 1.0; // Default to avoid division by zero
-    var loanAmount = statementData!['loanAmount'];
-    if (loanAmount is String) {
-      loanAmountValue = double.tryParse(loanAmount) ?? 1.0;
-    } else if (loanAmount is num) {
-      loanAmountValue = loanAmount.toDouble();
-    }
-
-    return (totalEMI / loanAmountValue).clamp(0.0, 1.0);
+    return loanAmount > 0 ? (totalRepaid / loanAmount).clamp(0.0, 1.0) : 0.0;
   }
 
-  // Utility function to format numbers
   String formatNumber(dynamic value) {
-    if (value == null) return '₹0.00';
-    double numValue = 0.0;
-    if (value is String) {
-      numValue = double.tryParse(value) ?? 0.0;
-    } else if (value is num) {
-      numValue = value.toDouble();
-    }
-    return '₹${numValue.toStringAsFixed(2)}';
+    return StatementService.formatAmount(value);
   }
 
   @override
@@ -161,8 +134,9 @@ class _LoanStatementScreenState extends State<LoanStatementScreen>
           ),
         ),
         systemOverlayStyle: const SystemUiOverlayStyle(
-            statusBarColor: Colors.transparent,
-            statusBarIconBrightness: Brightness.light),
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: Brightness.light,
+        ),
         title: Text(
           'Loan Statement',
           style: bold20White,
@@ -292,6 +266,7 @@ class _LoanStatementScreenState extends State<LoanStatementScreen>
   }
 
   Widget _buildRepaymentSummary() {
+    final loanAmount = _getLoanAmountValue();
     final totalPaid = _getTotalEMIPaidValue();
     final remaining = _getRemainingBalanceValue();
     final emiAmount = _getAverageEMIAmountValue();
@@ -331,11 +306,11 @@ class _LoanStatementScreenState extends State<LoanStatementScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Total EMI Paid',
+                      'Loan Amount',
                       style: semibold14Grey94,
                     ),
                     Text(
-                      formatNumber(totalPaid), // Use formatNumber
+                      formatNumber(loanAmount),
                       style: bold16Black33,
                     ),
                   ],
@@ -346,11 +321,11 @@ class _LoanStatementScreenState extends State<LoanStatementScreen>
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Text(
-                      'EMI Amount',
+                      'Total EMI Paid',
                       style: semibold14Grey94,
                     ),
                     Text(
-                      formatNumber(emiAmount), // Use formatNumber
+                      formatNumber(totalPaid),
                       style: bold16Black33,
                     ),
                   ],
@@ -361,11 +336,46 @@ class _LoanStatementScreenState extends State<LoanStatementScreen>
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      'Remaining',
+                      'Remaining Balance',
                       style: semibold14Grey94,
                     ),
                     Text(
-                      formatNumber(remaining), // Use formatNumber
+                      formatNumber(remaining),
+                      style: bold16Black33,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          heightSpace,
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'EMI Amount',
+                      style: semibold14Grey94,
+                    ),
+                    Text(
+                      formatNumber(emiAmount),
+                      style: bold16Black33,
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      'Repayment Progress',
+                      style: semibold14Grey94,
+                    ),
+                    Text(
+                      '${(_progressAnimation.value * 100).toStringAsFixed(1)}%',
                       style: bold16Black33,
                     ),
                   ],
@@ -384,11 +394,6 @@ class _LoanStatementScreenState extends State<LoanStatementScreen>
                 minHeight: 6,
               );
             },
-          ),
-          heightSpace,
-          Text(
-            'Repayment Progress: ${(_progressAnimation.value * 100).toStringAsFixed(1)}%',
-            style: semibold14Grey94,
           ),
         ],
       ),
@@ -432,9 +437,9 @@ class _LoanStatementScreenState extends State<LoanStatementScreen>
     return ColumnBuilder(
       itemBuilder: (context, index) {
         final transaction = transactions[index];
-        final isPayment = transaction['type'] == 'debit';
+        final isCredit = transaction['type'] == 'credit';
+        final color = isCredit ? Colors.green : Colors.red;
 
-        // Safely parse amount
         double amountValue = 0.0;
         var amt = transaction['amount'];
         if (amt is String) {
@@ -443,7 +448,6 @@ class _LoanStatementScreenState extends State<LoanStatementScreen>
           amountValue = amt.toDouble();
         }
 
-        // Safely parse balance
         double balanceValue = 0.0;
         var bal = transaction['balance'];
         if (bal is String) {
@@ -459,7 +463,7 @@ class _LoanStatementScreenState extends State<LoanStatementScreen>
             color: whiteColor,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: isPayment ? Colors.orange : Colors.grey,
+              color: color,
               width: 1,
             ),
             boxShadow: [
@@ -476,12 +480,12 @@ class _LoanStatementScreenState extends State<LoanStatementScreen>
                 height: 35,
                 width: 35,
                 decoration: BoxDecoration(
-                  color: Colors.orange.withOpacity(0.1),
+                  color: color.withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.payment,
-                  color: Colors.orange,
+                  color: color,
                   size: 18,
                 ),
               ),
@@ -491,11 +495,11 @@ class _LoanStatementScreenState extends State<LoanStatementScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      transaction['narration'] ?? 'EMI Payment',
+                      transaction['narration'] ?? (isCredit ? 'Loan Repayment' : 'Loan Disbursement'),
                       style: bold15Black33,
                     ),
                     Text(
-                      transaction['date'] ?? 'N/A',
+                      transaction['entryDate'] ?? 'N/A',
                       style: semibold14Grey94,
                     ),
                     if (transaction['method'] != null)
@@ -510,15 +514,15 @@ class _LoanStatementScreenState extends State<LoanStatementScreen>
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    '-${formatNumber(amountValue)}', // Use formatNumber
-                    style: const TextStyle(
-                      color: Colors.orange,
+                    isCredit ? '+${formatNumber(amountValue)}' : '-${formatNumber(amountValue)}',
+                    style: TextStyle(
+                      color: color,
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                     ),
                   ),
                   Text(
-                    'Balance: ${formatNumber(balanceValue)}', // Use formatNumber
+                    'Balance: ${formatNumber(balanceValue)}',
                     style: semibold14Grey94,
                   ),
                 ],
@@ -531,24 +535,24 @@ class _LoanStatementScreenState extends State<LoanStatementScreen>
     );
   }
 
-  // Helpers
-  double _getTotalEMIPaidValue() {
+  double _getLoanAmountValue() {
     if (statementData == null || statementData!['transactions'] == null) return 0.0;
     final transactions = List<Map<String, dynamic>>.from(statementData!['transactions']);
-    double total = 0.0;
     for (var t in transactions) {
       if (t['type'] == 'debit') {
         var amt = t['amount'];
-        double value = 0.0;
         if (amt is String) {
-          value = double.tryParse(amt) ?? 0.0; // Safely parse String to double
+          return double.tryParse(amt) ?? 0.0;
         } else if (amt is num) {
-          value = amt.toDouble();
+          return amt.toDouble();
         }
-        total += value;
       }
     }
-    return total;
+    return 0.0;
+  }
+
+  double _getTotalEMIPaidValue() {
+    return StatementService.getTotalCredits();
   }
 
   double _getAverageEMIAmountValue() {
@@ -557,11 +561,11 @@ class _LoanStatementScreenState extends State<LoanStatementScreen>
     double total = 0.0;
     int count = 0;
     for (var t in transactions) {
-      if (t['type'] == 'debit') {
+      if (t['type'] == 'credit') {
         var amt = t['amount'];
         double value = 0.0;
         if (amt is String) {
-          value = double.tryParse(amt) ?? 0.0; // Safely parse String to double
+          value = double.tryParse(amt) ?? 0.0;
         } else if (amt is num) {
           value = amt.toDouble();
         }
@@ -573,16 +577,8 @@ class _LoanStatementScreenState extends State<LoanStatementScreen>
   }
 
   double _getRemainingBalanceValue() {
-    if (statementData == null || statementData!['transactions'] == null) return 0.0;
-    final transactions = List<Map<String, dynamic>>.from(statementData!['transactions']);
-    if (transactions.isEmpty) return 0.0;
-    final lastTransaction = transactions.first;
-    var bal = lastTransaction['balance'];
-    if (bal is String) {
-      return double.tryParse(bal) ?? 0.0; // Safely parse String to double
-    } else if (bal is num) {
-      return bal.toDouble();
-    }
-    return 0.0;
+    final loanAmount = _getLoanAmountValue();
+    final totalPaid = _getTotalEMIPaidValue();
+    return (loanAmount - totalPaid).clamp(0.0, double.infinity);
   }
 }

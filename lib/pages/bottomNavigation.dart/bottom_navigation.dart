@@ -1,16 +1,16 @@
+
 import 'dart:io';
-import 'package:fl_banking_app/pages/Account/account.dart';
+import 'package:fl_banking_app/pages/profile/account.dart';
 import 'package:fl_banking_app/pages/deposit/deposit.dart';
 import 'package:fl_banking_app/pages/home/home.dart';
 import 'package:fl_banking_app/pages/loans/loans.dart';
 import 'package:fl_banking_app/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class BottomNavigationScreen extends StatefulWidget {
-  // Add phoneNumber to the constructor
   final String? phoneNumber;
   final int? id;
 
@@ -23,8 +23,6 @@ class BottomNavigationScreen extends StatefulWidget {
 class _BottomNavigationScreenState extends State<BottomNavigationScreen> {
   int? currentPage;
   DateTime? backPressTime;
-  // State variables for user data and loading state
-  Map<String, dynamic>? userData;
   bool _isLoading = true;
 
   @override
@@ -33,45 +31,69 @@ class _BottomNavigationScreenState extends State<BottomNavigationScreen> {
     setState(() {
       currentPage = widget.id ?? 0;
     });
-    // Fetch user data when the screen initializes
-    if (widget.phoneNumber != null) {
-      _fetchUserData();
-    } else {
-      // If phone number is not passed, handle it (e.g., show an error)
+    _checkPhoneNumber();
+  }
+
+  Future<void> _checkPhoneNumber() async {
+    if (!mounted) return;
+    String? phoneNumber = widget.phoneNumber;
+    if (phoneNumber == null) {
+      final prefs = await SharedPreferences.getInstance();
+      phoneNumber = prefs.getString('phoneNumber');
+      if (phoneNumber == null) {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+          _showToast('Phone number not found. Please log in again.');
+          await Future.delayed(const Duration(milliseconds: 1500));
+          if (mounted) {
+            Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+          }
+        }
+        return;
+      }
+    }
+    // Remove country code for consistency with KYCService
+    phoneNumber = phoneNumber.startsWith('+91') ? phoneNumber.substring(3) : phoneNumber;
+    if (mounted) {
       setState(() {
         _isLoading = false;
       });
-      // Optionally, you can navigate back to the login screen
-      // Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+      // Skip user data API and proceed to HomeScreen
+      // KYC validation will be handled by HomeScreen
     }
   }
 
-  Future<void> _fetchUserData() async {
-    // Skip user data fetching for now since we're using the accounts API directly
-    setState(() {
-      _isLoading = false;
-    });
+  void _showToast(String message) {
+    Fluttertoast.showToast(
+      msg: message,
+      toastLength: Toast.LENGTH_LONG,
+      gravity: ToastGravity.BOTTOM,
+      timeInSecForIosWeb: 3,
+      backgroundColor: Colors.black54,
+      textColor: Colors.white,
+      fontSize: 16.0,
+    );
   }
 
   List<Widget> get pages => [
-    const HomeScreen(),
-    DepositScreen(phoneNumber: widget.phoneNumber ?? '9519874704'),
-    LoansScreen(phoneNumber: widget.phoneNumber ?? '9519874704'),
-    const AccountScreen(),
-  ];
+        HomeScreen(phoneNumber: widget.phoneNumber ?? '9831209756'),
+        DepositScreen(phoneNumber: widget.phoneNumber ?? '9831209756'),
+        LoansScreen(phoneNumber: widget.phoneNumber ?? '9831209756'),
+        const AccountScreen(),
+      ];
 
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      // Show a loading indicator while fetching user data
       return const Scaffold(
         body: Center(
           child: CircularProgressIndicator(),
         ),
       );
     }
-    
-    // Once data is loaded, build the main UI
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
@@ -104,44 +126,16 @@ class _BottomNavigationScreenState extends State<BottomNavigationScreen> {
             },
             type: BottomNavigationBarType.fixed,
             items: [
+              BottomNavigationBarItem(icon: const Icon(Icons.home_outlined), label: 'Home'),
               BottomNavigationBarItem(
-                  icon: const Icon(Icons.home_outlined),
-                  label: 'Home'),
-              BottomNavigationBarItem(
-                  icon: Image.asset(
-                    "assets/bottomNavigation/Glyph_ undefined.png",
-                    height: 24,
-                    width: 24,
-                    color: grey94Color,
-                    fit: BoxFit.cover,
-                  ),
-                  activeIcon: Image.asset(
-                    "assets/bottomNavigation/Glyph_ undefined.png",
-                    height: 24,
-                    width: 24,
-                    color: primaryColor,
-                    fit: BoxFit.cover,
-                  ),
+                  icon: const Icon(Icons.account_balance_wallet_outlined, color: grey94Color),
+                  activeIcon: const Icon(Icons.account_balance_wallet_outlined, color: primaryColor),
                   label: 'Deposit'),
               BottomNavigationBarItem(
-                  icon: Image.asset(
-                    "assets/bottomNavigation/money-16-regular.png",
-                    height: 24,
-                    width: 24,
-                    color: grey94Color,
-                    fit: BoxFit.cover,
-                  ),
-                  activeIcon: Image.asset(
-                    "assets/bottomNavigation/money-16-regular.png",
-                    height: 24,
-                    width: 24,
-                    color: primaryColor,
-                    fit: BoxFit.cover,
-                  ),
+                  icon: const Icon(Icons.monetization_on_outlined, color: grey94Color),
+                  activeIcon: const Icon(Icons.monetization_on_outlined, color: primaryColor),
                   label: 'Loans'),
-              BottomNavigationBarItem(
-                  icon: const Icon(Icons.person_outline),
-                  label: 'Account')
+              BottomNavigationBarItem(icon: const Icon(Icons.person_outline), label: 'Account'),
             ],
           ),
         ),
@@ -151,8 +145,7 @@ class _BottomNavigationScreenState extends State<BottomNavigationScreen> {
 
   bool _onWillPop() {
     DateTime now = DateTime.now();
-    if (backPressTime == null ||
-        now.difference(backPressTime!) >= const Duration(seconds: 2)) {
+    if (backPressTime == null || now.difference(backPressTime!) >= const Duration(seconds: 2)) {
       backPressTime = now;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -171,4 +164,3 @@ class _BottomNavigationScreenState extends State<BottomNavigationScreen> {
     }
   }
 }
-

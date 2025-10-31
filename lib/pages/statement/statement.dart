@@ -12,14 +12,16 @@ class StatementScreen extends StatefulWidget {
 }
 
 class _StatementScreenState extends State<StatementScreen> {
-  static const String baseUrl = "https://finalan-techno-api-879235286268.asia-south1.run.app/";
+  static const String baseUrl =
+      "https://finalan-techno-api-879235286268.asia-south1.run.app/";
 
   String? mobile;
   List<Map<String, dynamic>> accounts = [];
   Map<String, dynamic>? selectedAccount;
   List<dynamic> transactions = [];
+  List<dynamic> filteredTransactions = [];
 
-  DateTime fromDate = DateTime.now().subtract(const Duration(days: 7));
+  DateTime? fromDate;
   DateTime toDate = DateTime.now();
 
   bool loadingAccounts = true;
@@ -75,6 +77,7 @@ class _StatementScreenState extends State<StatementScreen> {
     setState(() {
       loadingTransactions = true;
       transactions = [];
+      filteredTransactions = [];
     });
 
     final accountId =
@@ -89,8 +92,25 @@ class _StatementScreenState extends State<StatementScreen> {
       final response = await http.get(url);
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
+        final fetchedTransactions = data['transactions'] ?? [];
+
+        DateTime? earliestDate;
+        for (var tx in fetchedTransactions) {
+          final txDateStr = tx['date'] ?? tx['entryDate'];
+          if (txDateStr != null) {
+            final txDate = DateTime.tryParse(txDateStr);
+            if (txDate != null &&
+                (earliestDate == null || txDate.isBefore(earliestDate))) {
+              earliestDate = txDate;
+            }
+          }
+        }
+
         setState(() {
-          transactions = data['transactions'] ?? [];
+          transactions = fetchedTransactions;
+          fromDate =
+              earliestDate ?? DateTime.now().subtract(const Duration(days: 7));
+          filterTransactions();
         });
       } else {
         debugPrint("Error fetching statement: ${response.body}");
@@ -102,24 +122,70 @@ class _StatementScreenState extends State<StatementScreen> {
     setState(() => loadingTransactions = false);
   }
 
+  String _getAccountBalance() {
+    if (selectedAccount == null) return '0.00';
+
+    final accountType = selectedAccount!['accountType'] as String?;
+    final isLoan = accountType?.toLowerCase() == 'loan';
+
+    dynamic amount = isLoan
+        ? selectedAccount!['loanAmount']
+        : selectedAccount!['balance'];
+
+    if (amount == null) return '0.00';
+    if (amount is num) return amount.toStringAsFixed(2);
+    if (amount is String) {
+      final parsed = double.tryParse(amount);
+      return parsed?.toStringAsFixed(2) ?? '0.00';
+    }
+
+    return '0.00';
+  }
+
+  void filterTransactions() {
+    if (fromDate == null) return;
+
+    setState(() {
+      filteredTransactions = transactions.where((tx) {
+        final txDateStr = tx['date'] ?? tx['entryDate'];
+        if (txDateStr == null) return false;
+        final txDate = DateTime.tryParse(txDateStr);
+        if (txDate == null) return false;
+
+        return txDate.isAfter(fromDate!.subtract(const Duration(days: 1))) &&
+            txDate.isBefore(toDate.add(const Duration(days: 1)));
+      }).toList();
+    });
+  }
+
   Future<void> pickFromDate() async {
     final picked = await showDatePicker(
       context: context,
-      initialDate: fromDate,
+      initialDate: fromDate ?? DateTime.now().subtract(const Duration(days: 7)),
       firstDate: DateTime(2020),
-      lastDate: DateTime.now(),
+      lastDate: toDate,
     );
-    if (picked != null && picked != fromDate) setState(() => fromDate = picked);
+    if (picked != null && picked != fromDate) {
+      setState(() {
+        fromDate = picked;
+        filterTransactions();
+      });
+    }
   }
 
   Future<void> pickToDate() async {
     final picked = await showDatePicker(
       context: context,
       initialDate: toDate,
-      firstDate: DateTime(2020),
+      firstDate: fromDate ?? DateTime(2020),
       lastDate: DateTime.now(),
     );
-    if (picked != null && picked != toDate) setState(() => toDate = picked);
+    if (picked != null && picked != toDate) {
+      setState(() {
+        toDate = picked;
+        filterTransactions();
+      });
+    }
   }
 
   @override
@@ -131,14 +197,7 @@ class _StatementScreenState extends State<StatementScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.download),
-            onPressed: () {
-              // TODO: Implement download as PDF
-            },
-          ),
-        ],
+        // Download button removed
       ),
       body: mobile == null || loadingAccounts
           ? const Center(child: CircularProgressIndicator())
@@ -174,14 +233,17 @@ class _StatementScreenState extends State<StatementScreen> {
                             );
                           }).toList(),
                           onChanged: (Map<String, dynamic>? acc) {
-                            setState(() => selectedAccount = acc);
+                            setState(() {
+                              selectedAccount = acc;
+                              fromDate = null;
+                            });
                             fetchTransactions();
                           },
                         ),
                       ),
                       const SizedBox(width: 12),
                       Text(
-                        "₹${selectedAccount?['balance'] ?? '0.00'}",
+                        "₹${_getAccountBalance()}",
                         style: const TextStyle(
                             fontSize: 16, fontWeight: FontWeight.bold),
                       ),
@@ -196,7 +258,9 @@ class _StatementScreenState extends State<StatementScreen> {
                     TextButton.icon(
                       onPressed: pickFromDate,
                       icon: const Icon(Icons.calendar_today),
-                      label: Text(DateFormat("dd MMM, yyyy").format(fromDate)),
+                      label: Text(fromDate != null
+                          ? DateFormat("dd MMM, yyyy").format(fromDate!)
+                          : "Select From Date"),
                     ),
                     const SizedBox(width: 8),
                     TextButton.icon(
@@ -205,7 +269,7 @@ class _StatementScreenState extends State<StatementScreen> {
                       label: Text(DateFormat("dd MMM, yyyy").format(toDate)),
                     ),
                     ElevatedButton(
-                      onPressed: fetchTransactions,
+                      onPressed: filterTransactions,
                       child: const Text("Go"),
                     ),
                   ],
@@ -217,15 +281,16 @@ class _StatementScreenState extends State<StatementScreen> {
                 Expanded(
                   child: loadingTransactions
                       ? const Center(child: CircularProgressIndicator())
-                      : transactions.isEmpty
+                      : filteredTransactions.isEmpty
                           ? const Center(child: Text("No transactions found"))
                           : ListView.builder(
-                              itemCount: transactions.length,
+                              itemCount: filteredTransactions.length,
                               itemBuilder: (context, index) {
-                                final tx = transactions[index];
+                                final tx = filteredTransactions[index];
                                 final isCredit =
-                                    (tx['type'] ?? '').toLowerCase() ==
-                                        "credit";
+                                    (tx['type'] ?? '').toLowerCase() == "credit";
+                                final txDateStr = tx['date'] ?? tx['entryDate'];
+                                final displayDate = txDateStr ?? '';
 
                                 return ListTile(
                                   leading: CircleAvatar(
@@ -241,12 +306,12 @@ class _StatementScreenState extends State<StatementScreen> {
                                     ),
                                   ),
                                   title: Text(tx['name'] ?? "Unknown"),
-                                  subtitle: Text(tx['narration'] ?? ""),
+                                  subtitle: Text(
+                                      "${tx['narration'] ?? ''}\n${displayDate}"),
                                   trailing: Text(
                                     "${isCredit ? '+' : '-'}₹${tx['amount'] ?? 0}",
                                     style: TextStyle(
-                                      color:
-                                          isCredit ? Colors.green : Colors.red,
+                                      color: isCredit ? Colors.green : Colors.red,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),

@@ -11,12 +11,13 @@ class DepositScreen extends StatefulWidget {
   final String? phoneNumber;
 
   const DepositScreen({Key? key, this.phoneNumber}) : super(key: key);
+
   @override
   State<DepositScreen> createState() => _DepositScreenState();
 }
 
 class _DepositScreenState extends State<DepositScreen> {
-  List<Map<String, dynamic>> savingsAccounts = [];
+  List<Map<String, dynamic>> depositAccounts = [];
   bool isLoading = true;
   String? errorMessage;
 
@@ -24,10 +25,10 @@ class _DepositScreenState extends State<DepositScreen> {
   void initState() {
     super.initState();
     final phoneNumber = widget.phoneNumber ?? '9519874704';
-    _fetchSavingsAccounts(phoneNumber);
+    _fetchDepositAccounts(phoneNumber);
   }
 
-  Future<void> _fetchSavingsAccounts([String? phoneNumber]) async {
+  Future<void> _fetchDepositAccounts([String? phoneNumber]) async {
     final phone = phoneNumber ?? widget.phoneNumber ?? '9519874704';
     try {
       setState(() {
@@ -38,16 +39,16 @@ class _DepositScreenState extends State<DepositScreen> {
       final accounts = await BankAccountsService.fetchBankAccounts(phone);
 
       if (accounts != null) {
-        final savings = BankAccountsService.getSavingsAccounts();
+        final deposits = BankAccountsService.getDepositAccounts();
         setState(() {
-          savingsAccounts = savings;
+          depositAccounts = deposits;
           isLoading = false;
         });
       } else {
         setState(() {
           isLoading = false;
           errorMessage = BankAccountsService.errorMessage ??
-              'Failed to fetch savings accounts';
+              'Failed to fetch deposit accounts';
         });
         BankAccountsService.showToast(errorMessage!, isError: true);
       }
@@ -99,7 +100,7 @@ class _DepositScreenState extends State<DepositScreen> {
                       ),
                       heightSpace,
                       ElevatedButton(
-                        onPressed: () => _fetchSavingsAccounts(),
+                        onPressed: () => _fetchDepositAccounts(),
                         child: const Text('Retry'),
                       ),
                     ],
@@ -109,15 +110,15 @@ class _DepositScreenState extends State<DepositScreen> {
                   physics: const BouncingScrollPhysics(),
                   padding: EdgeInsets.zero,
                   children: [
-                    currentLoansListContent(),
+                    depositAccountsListContent(),
                     heightSpace,
                   ],
                 ),
     );
   }
 
-  currentLoansListContent() {
-    if (savingsAccounts.isEmpty) {
+  Widget depositAccountsListContent() {
+    if (depositAccounts.isEmpty) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(fixPadding * 2),
@@ -130,12 +131,12 @@ class _DepositScreenState extends State<DepositScreen> {
               ),
               heightSpace,
               Text(
-                'No savings accounts found',
+                'No deposit accounts found',
                 style: bold16Black33,
                 textAlign: TextAlign.center,
               ),
               Text(
-                'You don\'t have any active savings accounts',
+                'You don\'t have any active deposit accounts',
                 style: semibold14Grey94,
                 textAlign: TextAlign.center,
               ),
@@ -147,11 +148,12 @@ class _DepositScreenState extends State<DepositScreen> {
 
     return ColumnBuilder(
       itemBuilder: (context, index) {
-        final account = savingsAccounts[index];
-  final planDetails = account['planDetails'] ?? {};
-  final balance = account['balance'] ?? 0.0;
-  final openingDate = account['openingDate']?.toString() ?? 'N/A';
-  final interestRate = planDetails['annualInterestRate']?.toString() ?? '0';
+        final account = depositAccounts[index];
+        final planDetails = account['planDetails'] ?? {};
+        final balance = account['balance'] ?? 0.0;
+        final openingDate = account['openingDate']?.toString() ?? 'N/A';
+        final interestRate = planDetails['annualInterestRate']?.toString() ?? '0';
+        final accountType = BankAccountsService.formatAccountType(account['accountType']);
 
         return Container(
           margin: const EdgeInsets.symmetric(
@@ -191,7 +193,7 @@ class _DepositScreenState extends State<DepositScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            planDetails['schemeName']?.toString() ?? 'Savings Account',
+                            planDetails['schemeName']?.toString() ?? accountType,
                             style: bold16Black33,
                             overflow: TextOverflow.ellipsis,
                             maxLines: 1,
@@ -228,19 +230,20 @@ class _DepositScreenState extends State<DepositScreen> {
                       ),
                     ),
                     Expanded(
-                        child: Align(
-                      alignment: Alignment.center,
-                      child: infoWidget(
-                        'Interest Rate',
-                        "$interestRate% p.a.",
+                      child: Align(
+                        alignment: Alignment.center,
+                        child: infoWidget(
+                          'Interest Rate',
+                          "$interestRate% p.a.",
+                        ),
                       ),
-                    )),
+                    ),
                     Expanded(
                       child: Align(
                         alignment: Alignment.centerRight,
                         child: infoWidget(
                           'Account Type',
-                          'Savings',
+                          accountType,
                         ),
                       ),
                     )
@@ -249,15 +252,14 @@ class _DepositScreenState extends State<DepositScreen> {
               ),
               GestureDetector(
                 onTap: () {
-                  if (savingsAccounts.isNotEmpty) {
+                  if (depositAccounts.isNotEmpty) {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => DepositStatementScreen(
                           phoneNumber: widget.phoneNumber ?? '9519874704',
-                          // Ensure accountId is a String (some API responses may return a Map or int)
                           accountId: account['accountId']?.toString() ?? 'N/A',
-                          accountType: 'savings',
+                          accountType: account['accountType']?.toString() ?? 'savings',
                         ),
                       ),
                     );
@@ -283,11 +285,11 @@ class _DepositScreenState extends State<DepositScreen> {
           ),
         );
       },
-      itemCount: savingsAccounts.length,
+      itemCount: depositAccounts.length,
     );
   }
 
-    infoWidget(String title, dynamic detail) {
+  Widget infoWidget(String title, dynamic detail) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -308,7 +310,7 @@ class _DepositScreenState extends State<DepositScreen> {
     );
   }
 
-  dottedLine() {
+  Widget dottedLine() {
     return DottedBorder(
       padding: EdgeInsets.zero,
       color: primaryColor,

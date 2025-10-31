@@ -14,12 +14,11 @@ class StatementService {
   static Future<Map<String, dynamic>?> fetchBalance(
       String phoneNumber, String accountId) async {
     try {
-      final response = await http.get(Uri.parse(
-          'https://finalan-techno-api-879235286268.asia-south1.run.app/users/$phoneNumber/balance/$accountId'));
+      final response = await http.get(
+        Uri.parse('$baseUrl/users/$phoneNumber/balance/$accountId'),
+        headers: {'Content-Type': 'application/json'},
+      );
 
-      print('\n\n\n');
-      print('https://api.cornix.tech/users/$phoneNumber/balance/$accountId');
-      print('\n\n\n');
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       } else {
@@ -27,7 +26,7 @@ class StatementService {
         return null;
       }
     } catch (e) {
-      errorMessage = e.toString();
+      errorMessage = 'Network Error: $e';
       return null;
     }
   }
@@ -41,18 +40,14 @@ class StatementService {
 
       final response = await http.get(
         Uri.parse('$baseUrl/users/$phoneNumber/statement/savings/$accountId'),
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: {'Content-Type': 'application/json'},
       );
-      print(response.body);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['message'] == 'Transactions fetched successfully.') {
           statementData = data;
           return statementData;
-          
         } else {
           errorMessage = data['message'] ?? 'Failed to fetch statement';
           return null;
@@ -78,13 +73,8 @@ class StatementService {
 
       final response = await http.get(
         Uri.parse('$baseUrl/users/$phoneNumber/statement/loan/$accountId'),
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: {'Content-Type': 'application/json'},
       );
-      print('\n\n\n');
-      print('$baseUrl/users/$phoneNumber/statement/loan/$accountId');
-      print('\n\n\n');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -109,23 +99,23 @@ class StatementService {
 
   // Get recent transactions
   static List<Map<String, dynamic>> getRecentTransactions() {
-    if (statementData == null || statementData!['transactions'] == null)
+    if (statementData == null || statementData!['transactions'] == null) {
       return [];
+    }
 
-    final transactions =
-        List<Map<String, dynamic>>.from(statementData!['transactions']);
+    final transactions = List<Map<String, dynamic>>.from(statementData!['transactions']);
     // Sort by date (most recent first)
-    transactions.sort((a, b) => (b['date'] ?? '').compareTo(a['date'] ?? ''));
+    transactions.sort((a, b) => (b['entryDate'] ?? '').compareTo(a['entryDate'] ?? ''));
     return transactions.take(5).toList(); // Return last 5 transactions
   }
 
   // Get account balance from statement
   static double getCurrentBalance() {
-    if (statementData == null || statementData!['transactions'] == null)
+    if (statementData == null || statementData!['transactions'] == null) {
       return 0.0;
+    }
 
-    final transactions =
-        List<Map<String, dynamic>>.from(statementData!['transactions']);
+    final transactions = List<Map<String, dynamic>>.from(statementData!['transactions']);
     if (transactions.isEmpty) return 0.0;
 
     // Get the last transaction's balance
@@ -135,11 +125,11 @@ class StatementService {
 
   // Get total credits
   static double getTotalCredits() {
-    if (statementData == null || statementData!['transactions'] == null)
+    if (statementData == null || statementData!['transactions'] == null) {
       return 0.0;
+    }
 
-    final transactions =
-        List<Map<String, dynamic>>.from(statementData!['transactions']);
+    final transactions = List<Map<String, dynamic>>.from(statementData!['transactions']);
     double total = 0.0;
 
     for (var transaction in transactions) {
@@ -153,11 +143,11 @@ class StatementService {
 
   // Get total debits
   static double getTotalDebits() {
-    if (statementData == null || statementData!['transactions'] == null)
+    if (statementData == null || statementData!['transactions'] == null) {
       return 0.0;
+    }
 
-    final transactions =
-        List<Map<String, dynamic>>.from(statementData!['transactions']);
+    final transactions = List<Map<String, dynamic>>.from(statementData!['transactions']);
     double total = 0.0;
 
     for (var transaction in transactions) {
@@ -184,14 +174,14 @@ class StatementService {
   // Format amount for display
   static String formatAmount(dynamic amount) {
     if (amount == null) return '₹0.00';
-    
+
     double? amountValue;
     if (amount is num) {
       amountValue = amount.toDouble();
     } else if (amount is String) {
       amountValue = double.tryParse(amount);
     }
-    
+
     return '₹${amountValue?.toStringAsFixed(2) ?? '0.00'}';
   }
 

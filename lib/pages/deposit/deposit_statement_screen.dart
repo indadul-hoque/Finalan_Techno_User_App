@@ -14,39 +14,19 @@ class StatementService {
     print('Toast: $message');
   }
 
-  static Future<Map<String, dynamic>?> fetchBalance(
-      String phoneNumber, String accountId) async {
+  static Future<Map<String, dynamic>?> fetchStatement(
+      String phoneNumber, String accountId, String accountType) async {
     try {
       final response = await http.get(
         Uri.parse(
-            'https://finalan-techno-api-879235286268.asia-south1.run.app/users/$phoneNumber/balance/$accountId'),
-      );
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body);
-      } else {
-        errorMessage = 'Balance fetch failed: ${response.statusCode} - ${response.body}';
-        print('StatementService.fetchBalance error: ${response.statusCode} -> ${response.body}');
-        return null;
-      }
-    } catch (e) {
-      errorMessage = e.toString();
-      return null;
-    }
-  }
-
-  static Future<Map<String, dynamic>?> fetchSavingsStatement(
-      String phoneNumber, String accountId) async {
-    try {
-      final response = await http.get(
-        Uri.parse(
-            'https://finalan-techno-api-879235286268.asia-south1.run.app/users/$phoneNumber/statement/savings/$accountId'),
+            'https://finalan-techno-api-879235286268.asia-south1.run.app/users/$phoneNumber/statement/$accountType/$accountId'),
       );
       print("\nStatement Response:\n${response.body}\n");
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       } else {
         errorMessage = 'Statement fetch failed: ${response.statusCode} - ${response.body}';
-        print('StatementService.fetchSavingsStatement error: ${response.statusCode} -> ${response.body}');
+        print('StatementService.fetchStatement error: ${response.statusCode} -> ${response.body}');
         return null;
       }
     } catch (e) {
@@ -86,6 +66,7 @@ class _DepositStatementScreenState extends State<DepositStatementScreen> {
     
     return numValue.toStringAsFixed(2);
   }
+
   bool isLoading = true;
   String? errorMessage;
   Map<String, dynamic>? statementData;
@@ -104,37 +85,34 @@ class _DepositStatementScreenState extends State<DepositStatementScreen> {
         errorMessage = null;
       });
 
-      final balanceResponse =
-          await StatementService.fetchBalance(widget.phoneNumber, widget.accountId);
-      final statementResponse =
-          await StatementService.fetchSavingsStatement(widget.phoneNumber, widget.accountId);
+      final statementResponse = await StatementService.fetchStatement(
+          widget.phoneNumber, widget.accountId, widget.accountType.toLowerCase());
 
-      if (balanceResponse != null && statementResponse != null) {
+      if (statementResponse != null) {
         setState(() {
-          // Parse balance safely
-          final balance = balanceResponse['balance'];
-          if (balance is num) {
-            currentBalance = balance.toDouble();
-          } else if (balance is String) {
-            currentBalance = double.tryParse(balance);
-          } else if (balance is Map && balance['amount'] != null) {
-            final amount = balance['amount'];
-            if (amount is num) {
-              currentBalance = amount.toDouble();
-            } else if (amount is String) {
-              currentBalance = double.tryParse(amount);
+          statementData = statementResponse;
+          
+          // Get balance from the last transaction
+          final transactions = statementData!['transactions'] as List<dynamic>? ?? [];
+          if (transactions.isNotEmpty) {
+            final lastTransaction = transactions.last;
+            final balance = lastTransaction['balance'];
+            if (balance is num) {
+              currentBalance = balance.toDouble();
+            } else if (balance is String) {
+              currentBalance = double.tryParse(balance);
+            } else {
+              currentBalance = 0.0;
             }
           } else {
-            currentBalance = 0.0;
+            currentBalance = 0.0; // Default to 0 if no transactions
           }
 
-          statementData = statementResponse;
           isLoading = false;
         });
       } else {
         setState(() {
           isLoading = false;
-          // Prefer the detailed message from StatementService if available.
           errorMessage = StatementService.errorMessage ?? 'Failed to fetch data. Please try again.';
         });
         if (StatementService.errorMessage != null) {
@@ -387,8 +365,8 @@ class _DepositStatementScreenState extends State<DepositStatementScreen> {
                     children: [
                       Text(
                         isCredit
-                            ? '+₹${(transaction['amount'] is num ? (transaction['amount'] as num).toDouble() : double.tryParse(transaction['amount'].toString()))?.toStringAsFixed(2) ?? '0.00'}'
-                            : '-₹${(transaction['amount'] is num ? (transaction['amount'] as num).toDouble() : double.tryParse(transaction['amount'].toString()))?.toStringAsFixed(2) ?? '0.00'}',
+                            ? '+₹${_formatAmount(transaction['amount'])}'
+                            : '-₹${_formatAmount(transaction['amount'])}',
                         style: TextStyle(
                           color: isCredit ? Colors.green : Colors.red,
                           fontWeight: FontWeight.bold,
@@ -396,7 +374,7 @@ class _DepositStatementScreenState extends State<DepositStatementScreen> {
                         ),
                       ),
                       Text(
-                        'Balance: ₹${(transaction['balance'] is num ? (transaction['balance'] as num).toDouble() : double.tryParse(transaction['balance'].toString()))?.toStringAsFixed(2) ?? '0.00'}',
+                        'Balance: ₹${_formatAmount(transaction['balance'])}',
                         style: semibold14Grey94,
                       ),
                     ],
