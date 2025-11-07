@@ -17,38 +17,18 @@ class _WalletScreenState extends State<WalletScreen> {
 
   // UI state
   bool _isLoading = true;
+  bool _isLoadingTransactions = true;
   double _availableBalance = 0.0;
   DateTime _openingDate = DateTime.now();
 
   // Razorpay
   late Razorpay _razorpay;
 
-  // DUMMY TRANSACTION DATA (Replace with API call later)
-  final List<Map<String, dynamic>> _transactions = [
-    {
-      'amount': 5000.0,
-      'date': DateTime(2025, 11, 6, 14, 30),
-    },
-    {
-      'amount': 2500.0,
-      'date': DateTime(2025, 11, 5, 10, 15),
-    },
-    {
-      'amount': 10000.0,
-      'date': DateTime(2025, 11, 3, 16, 45),
-    },
-    {
-      'amount': 1500.0,
-      'date': DateTime(2025, 10, 30, 9, 20),
-    },
-    {
-      'amount': 7500.0,
-      'date': DateTime(2025, 10, 28, 18, 10),
-    },
-  ];
+  // Dynamic Transaction Data
+  List<Map<String, dynamic>> _transactions = [];
 
   // -----------------------------------------------------------------
-  // 1. FETCH WALLET DETAILS (dynamic URL)
+  // 1. FETCH WALLET DETAILS
   // -----------------------------------------------------------------
   Future<void> _fetchWalletDetails() async {
     setState(() => _isLoading = true);
@@ -62,7 +42,6 @@ class _WalletScreenState extends State<WalletScreen> {
       return;
     }
 
-    // Ensure phone starts with 91 (as in your demo URL)
     final String formattedPhone = phoneNumber.startsWith('+91')
         ? phoneNumber.substring(3)
         : phoneNumber.startsWith('91')
@@ -91,7 +70,7 @@ class _WalletScreenState extends State<WalletScreen> {
             _isLoading = false;
           });
 
-          print('✅ Wallet Balance: ₹$_availableBalance');
+          print('Wallet Balance: ₹$_availableBalance');
         } else {
           throw Exception(json['message'] ?? 'Unknown error');
         }
@@ -99,9 +78,75 @@ class _WalletScreenState extends State<WalletScreen> {
         throw Exception('Server error: ${response.statusCode}');
       }
     } catch (e) {
-      print('❌ Fetch error: $e');
+      print('Fetch error: $e');
       _showSnackBar('Failed to load wallet: $e', Colors.red);
       setState(() => _isLoading = false);
+    }
+  }
+
+  // -----------------------------------------------------------------
+  // 2. FETCH TRANSACTION HISTORY (DYNAMIC)
+  // -----------------------------------------------------------------
+  Future<void> _fetchTransactions() async {
+    setState(() => _isLoadingTransactions = true);
+
+    final prefs = await SharedPreferences.getInstance();
+    final String? phoneNumber = prefs.getString('phoneNumber');
+
+    if (phoneNumber == null || phoneNumber.isEmpty) {
+      _showSnackBar('Login required to view transactions', Colors.red);
+      setState(() => _isLoadingTransactions = false);
+      return;
+    }
+
+    final String formattedPhone = phoneNumber.startsWith('+91')
+        ? phoneNumber.substring(3)
+        : phoneNumber.startsWith('91')
+            ? phoneNumber
+            : '91$phoneNumber';
+
+    final url = Uri.parse(
+        'https://gs3-itax-user-app-backend-879235286268.asia-south1.run.app/mobile/wallet/$formattedPhone/transactions');
+
+    try {
+      final response = await http.get(
+        url,
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      print('TRANSACTIONS RESPONSE: ${response.statusCode}');
+      print('BODY: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> json = jsonDecode(response.body);
+
+        if (json['success'] == true && json['transactions'] != null) {
+          final List<dynamic> rawList = json['transactions'];
+          setState(() {
+            _transactions = rawList.map((t) {
+              return {
+                'amount': (t['amount'] is int)
+                    ? t['amount'].toDouble()
+                    : double.tryParse(t['amount'].toString()) ?? 0.0,
+                'date': DateTime.tryParse(t['createdAt'] ?? '') ?? DateTime.now(),
+                'type': t['type'] ?? 'credit', // optional
+              };
+            }).toList();
+            _isLoadingTransactions = false;
+          });
+        } else {
+          throw Exception(json['message'] ?? 'No transactions');
+        }
+      } else {
+        throw Exception('Server error: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Transaction fetch error: $e');
+      _showSnackBar('Failed to load transactions', Colors.red);
+      setState(() {
+        _transactions = [];
+        _isLoadingTransactions = false;
+      });
     }
   }
 
@@ -112,7 +157,9 @@ class _WalletScreenState extends State<WalletScreen> {
     _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
     _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
     _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, _handleExternalWallet);
-    _fetchWalletDetails();
+
+    // Fetch both wallet and transactions
+    _fetchWalletDetails().then((_) => _fetchTransactions());
   }
 
   @override
@@ -122,6 +169,9 @@ class _WalletScreenState extends State<WalletScreen> {
     super.dispose();
   }
 
+  // -----------------------------------------------------------------
+  // CREATE ORDER & PAYMENT LOGIC (unchanged)
+  // -----------------------------------------------------------------
   Future<Map<String, dynamic>?> _createOrder(double amount) async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -139,8 +189,6 @@ class _WalletScreenState extends State<WalletScreen> {
         'https://gs3-itax-user-app-backend-879235286268.asia-south1.run.app/mobile/wallet/$formattedPhone/add',
       );
 
-      print('Creating order for ₹$amount → $formattedPhone');
-
       final response = await http.post(
         url,
         headers: {
@@ -149,9 +197,6 @@ class _WalletScreenState extends State<WalletScreen> {
         },
         body: jsonEncode({'amount': amount.toInt()}),
       ).timeout(const Duration(seconds: 12));
-
-      print('SERVER STATUS: ${response.statusCode}');
-      print('SERVER BODY: ${response.body}');
 
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body);
@@ -165,17 +210,9 @@ class _WalletScreenState extends State<WalletScreen> {
         _showSnackBar('Server down (${response.statusCode})', Colors.red);
       }
     } catch (e) {
-      print('CREATE ORDER EXCEPTION: $e');
       _showSnackBar('No internet / timeout', Colors.red);
     }
     return null;
-  }
-
-  void _showSnackBar(String message, Color bg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-          content: Text(message, style: snackBarStyle), backgroundColor: bg),
-    );
   }
 
   void _openCheckout() async {
@@ -251,14 +288,13 @@ class _WalletScreenState extends State<WalletScreen> {
         }),
       );
 
-      print('VERIFY RESPONSE: ${verifyResponse.body}');
-
       if (verifyResponse.statusCode == 200) {
         final json = jsonDecode(verifyResponse.body);
         if (json['success'] == true) {
           await _fetchWalletDetails();
+          await _fetchTransactions(); // Refresh transactions
           _amountController.clear();
-          _showSnackBar('₹${amount.toInt()} added! ✅', greenColor);
+          _showSnackBar('₹${amount.toInt()} added!', greenColor);
         } else {
           _showSnackBar('Server: ${json['error']}', Colors.red);
         }
@@ -285,6 +321,13 @@ class _WalletScreenState extends State<WalletScreen> {
       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
     ];
     return '${date.day} ${months[date.month - 1]}, ${date.year}';
+  }
+
+  void _showSnackBar(String message, Color bg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+          content: Text(message, style: snackBarStyle), backgroundColor: bg),
+    );
   }
 
   @override
@@ -386,36 +429,41 @@ class _WalletScreenState extends State<WalletScreen> {
                   child: Text('Recent Transactions', style: bold16Black33),
                 ),
 
-                // ------------------- Transaction List -------------------
-                _transactions.isEmpty
-                    ? Padding(
-                        padding: const EdgeInsets.all(fixPadding * 4),
-                        child: Center(
-                          child: Column(
-                            children: [
-                              Icon(Icons.receipt_long_outlined,
-                                  size: 48, color: Colors.grey[400]),
-                              heightSpace,
-                              Text('No transactions yet',
-                                  style: semibold14Grey94),
-                            ],
-                          ),
-                        ),
+                // ------------------- Transaction List (Dynamic) -------------------
+                _isLoadingTransactions
+                    ? const Padding(
+                        padding: EdgeInsets.all(fixPadding * 4),
+                        child: Center(child: CircularProgressIndicator()),
                       )
-                    : ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: fixPadding * 2),
-                        itemCount: _transactions.length,
-                        itemBuilder: (context, index) {
-                          final transaction = _transactions[index];
-                          return _buildTransactionCard(
-                            amount: transaction['amount'],
-                            date: transaction['date'],
-                          );
-                        },
-                      ),
+                    : _transactions.isEmpty
+                        ? Padding(
+                            padding: const EdgeInsets.all(fixPadding * 4),
+                            child: Center(
+                              child: Column(
+                                children: [
+                                  Icon(Icons.receipt_long_outlined,
+                                      size: 48, color: Colors.grey[400]),
+                                  heightSpace,
+                                  Text('No transactions yet',
+                                      style: semibold14Grey94),
+                                ],
+                              ),
+                            ),
+                          )
+                        : ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: fixPadding * 2),
+                            itemCount: _transactions.length,
+                            itemBuilder: (context, index) {
+                              final transaction = _transactions[index];
+                              return _buildTransactionCard(
+                                amount: transaction['amount'],
+                                date: transaction['date'],
+                              );
+                            },
+                          ),
                 heightBox(100),
               ],
             ),
@@ -479,7 +527,7 @@ class _WalletScreenState extends State<WalletScreen> {
     );
   }
 
-  // ------------------- Clean Transaction Card Widget -------------------
+  // ------------------- Transaction Card Widget -------------------
   Widget _buildTransactionCard({
     required double amount,
     required DateTime date,
