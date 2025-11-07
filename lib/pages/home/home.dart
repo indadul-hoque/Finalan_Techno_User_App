@@ -1,3 +1,6 @@
+import 'dart:convert';
+
+import 'package:fl_banking_app/config.dart';
 import 'package:fl_banking_app/localization/localization_const.dart';
 import 'package:fl_banking_app/pages/home/widgets/kycstatus/kyc_service.dart';
 import 'package:fl_banking_app/services/bank_accounts_service.dart';
@@ -9,6 +12,7 @@ import 'package:fl_banking_app/pages/home/widgets/kycstatus/kyc_status_card.dart
 import 'package:fl_banking_app/pages/home/widgets/bankaccount/bank_accounts_summary.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
@@ -27,6 +31,10 @@ class _HomeScreenState extends State<HomeScreen> {
   String? userName;
   bool _isLoadingTransactions = false;
   List<Map<String, dynamic>> _recentTransactions = [];
+
+
+double _walletBalance = 0.0;
+  bool _isLoadingWallet = true; 
 
   @override
   void initState() {
@@ -64,7 +72,55 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     if (selectedUserId != null) {
-      _loadKYCData();
+      await Future.wait([
+        _loadKYCData(),
+        _fetchWalletBalance(), // NEW
+      ]);
+    }
+  }
+
+  // ADD: Fetch real wallet balance
+  Future<void> _fetchWalletBalance() async {
+    if (!mounted || selectedUserId == null) return;
+
+    setState(() {
+      _isLoadingWallet = true;
+    });
+
+    try {
+      final formatted = selectedUserId!.startsWith('91') ? selectedUserId! : '91$selectedUserId!';
+      final url = Uri.parse('${AppConfig.baseUrl}/mobile/wallet/$formatted');
+
+      final res = await http.get(
+        url,
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (res.statusCode == 200) {
+        final json = jsonDecode(res.body);
+        if (json['success'] == true) {
+          final balance = double.tryParse(json['data']['walletBalance'].toString()) ?? 0.0;
+          if (mounted) {
+            setState(() {
+              _walletBalance = balance;
+              _isLoadingWallet = false;
+            });
+          }
+        } else {
+          throw Exception('API success false');
+        }
+      } else {
+        throw Exception('HTTP ${res.statusCode}');
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingWallet = false;
+        });
+      }
+      print('Wallet fetch error: $e');
+      // Optional: show toast only if critical
+      // _showToast('Failed to load wallet balance');
     }
   }
 
@@ -285,14 +341,26 @@ class _HomeScreenState extends State<HomeScreen> {
       });
     }
 
+    // ADD: Real Wallet from API
     accounts.add({
-      "totalbalance": 2500.00,
+      "totalbalance": _walletBalance,
       "accountType": "Digital Wallet",
-      "accountNo": "Wallet ID: WLT001",
+      "accountNo": _isLoadingWallet ? "Loading..." : "Wallet ID: WLT001",
       "accountId": "WLT001",
       "isRealAccount": false,
       "walletType": "UPI Wallet",
+      "isLoading": _isLoadingWallet,
     });
+
+    // Fallback if no accounts
+    if (accounts.isEmpty && !_isLoadingWallet) {
+      accounts.add({
+        "totalbalance": 0,
+        "accountType": "No accounts found",
+        "accountNo": "Please refresh to load accounts",
+        "isRealAccount": false,
+      });
+    }
 
     return accounts;
   }

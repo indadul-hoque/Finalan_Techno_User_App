@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:fl_banking_app/config.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
@@ -12,8 +13,7 @@ class StatementScreen extends StatefulWidget {
 }
 
 class _StatementScreenState extends State<StatementScreen> {
-  static const String baseUrl =
-      "https://finalan-techno-api-879235286268.asia-south1.run.app/";
+  static const String baseUrl = AppConfig.baseUrl;
 
   String? mobile;
   List<Map<String, dynamic>> accounts = [];
@@ -128,9 +128,8 @@ class _StatementScreenState extends State<StatementScreen> {
     final accountType = selectedAccount!['accountType'] as String?;
     final isLoan = accountType?.toLowerCase() == 'loan';
 
-    dynamic amount = isLoan
-        ? selectedAccount!['loanAmount']
-        : selectedAccount!['balance'];
+    dynamic amount =
+        isLoan ? selectedAccount!['loanAmount'] : selectedAccount!['balance'];
 
     if (amount == null) return '0.00';
     if (amount is num) return amount.toStringAsFixed(2);
@@ -288,7 +287,8 @@ class _StatementScreenState extends State<StatementScreen> {
                               itemBuilder: (context, index) {
                                 final tx = filteredTransactions[index];
                                 final isCredit =
-                                    (tx['type'] ?? '').toLowerCase() == "credit";
+                                    (tx['type'] ?? '').toLowerCase() ==
+                                        "credit";
                                 final txDateStr = tx['date'] ?? tx['entryDate'];
                                 final displayDate = txDateStr ?? '';
 
@@ -311,7 +311,8 @@ class _StatementScreenState extends State<StatementScreen> {
                                   trailing: Text(
                                     "${isCredit ? '+' : '-'}₹${tx['amount'] ?? 0}",
                                     style: TextStyle(
-                                      color: isCredit ? Colors.green : Colors.red,
+                                      color:
+                                          isCredit ? Colors.green : Colors.red,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),

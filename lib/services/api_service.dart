@@ -1,8 +1,9 @@
 import 'dart:convert';
+import 'package:fl_banking_app/config.dart';
 import 'package:http/http.dart' as http;
 
 class ApiService {
-  static const String baseUrl = "https://finalan-techno-api-879235286268.asia-south1.run.app/";
+  static const String baseUrl = AppConfig.baseUrl;
 
   // Fetch user accounts - you’ll need a separate endpoint for this
   static Future<List<dynamic>> fetchAccounts(String mobile) async {

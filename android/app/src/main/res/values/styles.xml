@@ -1,18 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Theme applied to the Android Window while the process is starting when the OS's Dark Mode setting is off -->
+
+    <!-- YOUR ORIGINAL SPLASH THEMES (KEEP THEM) -->
     <style name="LaunchTheme" parent="@android:style/Theme.Light.NoTitleBar">
-        <!-- Show a splash screen on the activity. Automatically removed when
-             the Flutter engine draws its first frame -->
         <item name="android:windowBackground">@drawable/launch_background</item>
     </style>
-    <!-- Theme applied to the Android Window as soon as the process has started.
-         This theme determines the color of the Android Window while your
-         Flutter UI initializes, as well as behind your Flutter UI while its
-         running.
 
-         This Theme is only used starting with V2 of Flutter's Android embedding. -->
     <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">
         <item name="android:windowBackground">?android:colorBackground</item>
     </style>
+
+    <!-- RAZORPAY MAGIC THEME (ADDED BELOW) -->
+    <!-- THIS FIXES: Manifest merger failed + White screen + -4 FPS -->
+    <style name="CheckoutTheme" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="colorPrimary">#512DA8</item>          <!-- Purple header -->
+        <item name="colorPrimaryDark">#3700B3</item>     <!-- Dark purple status bar -->
+        <item name="colorAccent">#FF4081</item>          <!-- Pink buttons -->
+        <item name="android:windowBackground">@android:color/white</item>
+        <item name="android:textColorPrimary">#000000</item>
+        <item name="android:textColorSecondary">#757575</item>
+        <item name="android:windowAnimationStyle">@null</item>
+    </style>
+
 </resources>

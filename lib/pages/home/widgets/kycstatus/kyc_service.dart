@@ -1,10 +1,12 @@
 import 'dart:convert';
+import 'package:fl_banking_app/config.dart';
 import 'package:http/http.dart' as http;
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:flutter/material.dart';
 
 class KYCService {
-  static const String baseUrl = 'https://finalan-techno-api-879235286268.asia-south1.run.app/';
+  static const String baseUrl = AppConfig.baseUrl;
+  //https://gs3-itax-user-app-backend-879235286268.asia-south1.run.app/
 
   // KYC Model
   static Map<String, dynamic>? kycData;

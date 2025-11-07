@@ -1,58 +1,72 @@
 import 'dart:convert';
+import 'package:fl_banking_app/config.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart';
 
 class DepositService {
-  static const String baseUrl =
-      "https://finalan-techno-api-879235286268.asia-south1.run.app";
+  static const String baseUrl = AppConfig.baseUrl;
 
-  /// Creates a deposit transaction
-  /// Returns the response data if successful, throws an exception if failed
-  Future<Map<String, dynamic>> createDeposit({
-    required String accountType,
-    required String accountNumber,
+  /// Deducts from wallet with accountType & accountId
+  /// POST body:
+  /// {
+  ///   "amount": 100,
+  ///   "accountType": "loan",
+  ///   "accountId": "LN0010"
+  /// }
+  Future<Map<String, dynamic>> deductFromWallet({
     required double amount,
-    required String method,
-    required String kycId, // Added kycId parameter
+    required String accountType,
+    required String accountId,
   }) async {
     try {
-      // Get phone number from SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       final String? phoneNumber = prefs.getString('phoneNumber');
-      
 
-      // if (phoneNumber == null || uid == null) {
-      //   throw Exception('User details not found in local storage');
-      // }
+      if (phoneNumber == null) {
+        throw Exception('Phone number not found in local storage');
+      }
 
-      final url = Uri.parse('$baseUrl/users/$phoneNumber/deposit/create-transaction');
+      // Format phone with country code
+      final formattedPhone =
+          phoneNumber.startsWith('91') ? phoneNumber : '91$phoneNumber';
 
-      final body = jsonEncode({
-        'accountType': accountType,
-        'accountNumber': accountNumber,
-        'amount': amount,
-        'method': method,
-        // 'uid': uid,
-        'uid': kycId, // Include kycId in the request body
-      });
+      // Correct endpoint
+      final deductUrl =
+          Uri.parse('$baseUrl/mobile/wallet/$formattedPhone/deduct');
+
+      // Prepare request body
+      final requestBody = {
+        "amount": amount,
+        "accountType": accountType,
+        "accountId": accountId,
+      };
+
+      // Log full request
+      debugPrint('=== WALLET DEDUCT REQUEST ===');
+      debugPrint('URL: $deductUrl');
+      debugPrint('Body: ${jsonEncode(requestBody)}');
+      debugPrint('============================');
 
       final response = await http.post(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: body,
+        deductUrl,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(requestBody),
       );
 
+      final responseBody = jsonDecode(response.body);
+
       if (response.statusCode == 200 || response.statusCode == 201) {
-        return jsonDecode(response.body);
+        debugPrint('Wallet deduction successful: $responseBody');
+        return responseBody;
       } else {
-        throw Exception(
-          'Failed to create deposit. Status: ${response.statusCode}, Body: ${response.body}',
-        );
+        final error = responseBody['error'] ?? 'Wallet deduction failed';
+        debugPrint('Wallet deduction failed: $error');
+        throw Exception(error);
       }
     } catch (error) {
-      throw Exception('Error creating deposit: $error');
+      debugPrint('Deduction failed: $error');
+      throw Exception('Wallet deduction failed: $error');
     }
   }
 }

@@ -1,10 +1,11 @@
 import 'dart:convert';
+import 'package:fl_banking_app/config.dart';
 import 'package:http/http.dart' as http;
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:flutter/material.dart';
 
 class StatementService {
-  static const String baseUrl = 'https://finalan-techno-api-879235286268.asia-south1.run.app/';
+  static const String baseUrl = AppConfig.baseUrl;
 
   // Statement Model
   static Map<String, dynamic>? statementData;

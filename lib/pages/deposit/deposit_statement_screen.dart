@@ -19,14 +19,16 @@ class StatementService {
     try {
       final response = await http.get(
         Uri.parse(
-            'https://finalan-techno-api-879235286268.asia-south1.run.app/users/$phoneNumber/statement/$accountType/$accountId'),
+            'https://gs3-itax-user-app-backend-879235286268.asia-south1.run.app/users/$phoneNumber/statement/$accountType/$accountId'),
       );
       print("\nStatement Response:\n${response.body}\n");
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       } else {
-        errorMessage = 'Statement fetch failed: ${response.statusCode} - ${response.body}';
-        print('StatementService.fetchStatement error: ${response.statusCode} -> ${response.body}');
+        errorMessage =
+            'Statement fetch failed: ${response.statusCode} - ${response.body}';
+        print(
+            'StatementService.fetchStatement error: ${response.statusCode} -> ${response.body}');
         return null;
       }
     } catch (e) {
@@ -56,14 +58,14 @@ class _DepositStatementScreenState extends State<DepositStatementScreen> {
   // Helper method to format amount values that could be String or num
   String _formatAmount(dynamic value) {
     if (value == null) return '0.00';
-    
+
     double numValue = 0.0;
     if (value is String) {
       numValue = double.tryParse(value) ?? 0.0;
     } else if (value is num) {
       numValue = value.toDouble();
     }
-    
+
     return numValue.toStringAsFixed(2);
   }
 
@@ -86,38 +88,53 @@ class _DepositStatementScreenState extends State<DepositStatementScreen> {
       });
 
       final statementResponse = await StatementService.fetchStatement(
-          widget.phoneNumber, widget.accountId, widget.accountType.toLowerCase());
+          widget.phoneNumber,
+          widget.accountId,
+          widget.accountType.toLowerCase());
 
       if (statementResponse != null) {
         setState(() {
           statementData = statementResponse;
-          
-          // Get balance from the last transaction
-          final transactions = statementData!['transactions'] as List<dynamic>? ?? [];
-          if (transactions.isNotEmpty) {
-            final lastTransaction = transactions.last;
-            final balance = lastTransaction['balance'];
-            if (balance is num) {
-              currentBalance = balance.toDouble();
-            } else if (balance is String) {
-              currentBalance = double.tryParse(balance);
-            } else {
-              currentBalance = 0.0;
+
+          // -------------------------------------------------
+          //  CALCULATE CURRENT BALANCE BY ADDING ALL TXs
+          // -------------------------------------------------
+          final transactions =
+              statementData!['transactions'] as List<dynamic>? ?? [];
+
+          double runningBalance = 0.0;
+
+          for (final tx in transactions) {
+            final amountRaw = tx['amount'];
+            final type =
+                tx['type']?.toString().toLowerCase(); // 'credit' or 'debit'
+
+            double amount = 0.0;
+            if (amountRaw is num) {
+              amount = amountRaw.toDouble();
+            } else if (amountRaw is String) {
+              amount = double.tryParse(amountRaw) ?? 0.0;
             }
-          } else {
-            currentBalance = 0.0; // Default to 0 if no transactions
+
+            if (type == 'credit') {
+              runningBalance += amount;
+            } else if (type == 'debit') {
+              runningBalance -= amount;
+            }
+            // ignore unknown types
           }
+
+          currentBalance = runningBalance;
+          // -------------------------------------------------
 
           isLoading = false;
         });
       } else {
         setState(() {
           isLoading = false;
-          errorMessage = StatementService.errorMessage ?? 'Failed to fetch data. Please try again.';
+          errorMessage = StatementService.errorMessage ??
+              'Failed to fetch data. Please try again.';
         });
-        if (StatementService.errorMessage != null) {
-          print('StatementService reported: ${StatementService.errorMessage}');
-        }
         StatementService.showToast(errorMessage!, isError: true);
       }
     } catch (e) {
@@ -257,7 +274,8 @@ class _DepositStatementScreenState extends State<DepositStatementScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text('Account Type', style: semibold14Grey94),
-                    Text(widget.accountType.toUpperCase(), style: bold16Black33),
+                    Text(widget.accountType.toUpperCase(),
+                        style: bold16Black33),
                   ],
                 ),
               ),
@@ -356,7 +374,8 @@ class _DepositStatementScreenState extends State<DepositStatementScreen> {
                               : (isCredit ? 'Deposit' : 'Withdrawal'),
                           style: bold15Black33,
                         ),
-                        Text(transaction['date'] ?? 'N/A', style: semibold14Grey94),
+                        Text(transaction['date'] ?? 'N/A',
+                            style: semibold14Grey94),
                       ],
                     ),
                   ),
@@ -381,7 +400,8 @@ class _DepositStatementScreenState extends State<DepositStatementScreen> {
                   ),
                 ],
               ),
-              if (transaction['method'] != null || transaction['glHead'] != null) ...[
+              if (transaction['method'] != null ||
+                  transaction['glHead'] != null) ...[
                 heightSpace,
                 Container(
                   padding: const EdgeInsets.all(fixPadding / 2),
@@ -392,7 +412,8 @@ class _DepositStatementScreenState extends State<DepositStatementScreen> {
                   child: Row(
                     children: [
                       if (transaction['method'] != null) ...[
-                        Text('Method: ${transaction['method']}', style: semibold14Grey94),
+                        Text('Method: ${transaction['method']}',
+                            style: semibold14Grey94),
                         if (transaction['glHead'] != null) ...[
                           const SizedBox(width: 10),
                           Text('•', style: semibold14Grey94),

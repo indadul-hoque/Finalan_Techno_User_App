@@ -1,8 +1,12 @@
 import 'package:fl_banking_app/services/bank_accounts_service.dart';
 import 'package:fl_banking_app/theme/theme.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:fl_banking_app/config.dart';   // <-- add this
 
-class BankAccountsSummary extends StatelessWidget {
+class BankAccountsSummary extends StatefulWidget {
   final bool isLoading;
   final VoidCallback onRefresh;
   final List<Map<String, dynamic>> accounts;
@@ -15,8 +19,71 @@ class BankAccountsSummary extends StatelessWidget {
   }) : super(key: key);
 
   @override
+  State<BankAccountsSummary> createState() => _BankAccountsSummaryState();
+}
+
+class _BankAccountsSummaryState extends State<BankAccountsSummary> {
+  double _walletBalance = 0.0;
+  bool _walletLoading = true;
+  String? _phoneNumber;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPhoneAndFetchWallet();
+  }
+
+  Future<void> _loadPhoneAndFetchWallet() async {
+    final prefs = await SharedPreferences.getInstance();
+    _phoneNumber = prefs.getString('phoneNumber');
+
+    if (_phoneNumber == null) {
+      setState(() => _walletLoading = false);
+      return;
+    }
+
+    await _fetchWalletBalance();
+  }
+
+  Future<void> _fetchWalletBalance() async {
+    if (_phoneNumber == null) return;
+
+    setState(() => _walletLoading = true);
+    try {
+      final formatted = _phoneNumber!.startsWith('91') ? _phoneNumber : '91$_phoneNumber';
+      final url = Uri.parse('${AppConfig.baseUrl}/mobile/wallet/$formatted');
+
+      final res = await http.get(
+        url,
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (res.statusCode == 200) {
+        final json = jsonDecode(res.body);
+        if (json['success'] == true) {
+          final balance = double.tryParse(json['data']['walletBalance'].toString()) ?? 0.0;
+          setState(() {
+            _walletBalance = balance;
+            _walletLoading = false;
+          });
+          return;
+        }
+      }
+      throw Exception('Failed');
+    } catch (e) {
+      print('Wallet fetch error: $e');
+      setState(() => _walletLoading = false);
+    }
+  }
+
+  // Refresh both accounts and wallet
+  Future<void> _handleRefresh() async {
+    widget.onRefresh();
+    await _fetchWalletBalance();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // Separate accounts into deposits and loans using service methods
     final depositAccounts = BankAccountsService.getDepositAccounts();
     final loanAccounts = BankAccountsService.getLoanAccounts();
 
@@ -41,62 +108,45 @@ class BankAccountsSummary extends StatelessWidget {
             // Header
             Row(
               children: [
-                const Icon(
-                  Icons.account_balance,
-                  color: primaryColor,
-                  size: 24,
-                ),
+                const Icon(Icons.account_balance, color: primaryColor, size: 24),
                 widthSpace,
-                const Text(
-                  'Accounts Overview',
-                  style: bold18Black33,
-                ),
+                const Text('Accounts Overview', style: bold18Black33),
                 const Spacer(),
-                if (isLoading)
+                if (widget.isLoading || _walletLoading)
                   const SizedBox(
                     height: 16,
                     width: 16,
-                    child: CircularProgressIndicator(
-                      color: primaryColor,
-                      strokeWidth: 2,
-                    ),
+                    child: CircularProgressIndicator(color: primaryColor, strokeWidth: 2),
                   )
                 else
                   IconButton(
-                    onPressed: onRefresh,
-                    icon: const Icon(
-                      Icons.refresh,
-                      color: primaryColor,
-                      size: 20,
-                    ),
+                    onPressed: _handleRefresh,
+                    icon: const Icon(Icons.refresh, color: primaryColor, size: 20),
                   ),
               ],
             ),
             heightSpace,
+
             // Deposit Accounts Section
             _buildSectionTitle('Deposit Accounts'),
             if (depositAccounts.isNotEmpty) ...[
               _buildTotalBalance(),
               heightSpace,
-              ...depositAccounts.map((account) => _buildAccountCard(
-                    account: account,
-                    isSavings: true,
-                  )),
+              ...depositAccounts.map((account) => _buildAccountCard(account: account, isSavings: true)),
             ] else
               _buildEmptyState('No deposit accounts found.'),
             heightSpace,
+
             // Loans Section
             _buildSectionTitle('Loans'),
             if (loanAccounts.isNotEmpty) ...[
               _buildTotalLoanAmount(),
               heightSpace,
-              ...loanAccounts.map((account) => _buildAccountCard(
-                    account: account,
-                    isSavings: false,
-                  )),
+              ...loanAccounts.map((account) => _buildAccountCard(account: account, isSavings: false)),
             ] else
               _buildEmptyState('No loans found.'),
             heightSpace,
+
             // Wallet Section
             _buildSectionTitle('Wallet'),
             _buildWalletCard(),
@@ -106,12 +156,11 @@ class BankAccountsSummary extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionTitle(String title) {
-    return Text(
-      title,
-      style: bold16Black33,
-    );
-  }
+  // ─────────────────────────────────────────────────────────────────────
+  // UI Builders (unchanged except wallet)
+  // ─────────────────────────────────────────────────────────────────────
+
+  Widget _buildSectionTitle(String title) => Text(title, style: bold16Black33);
 
   Widget _buildTotalBalance() {
     return Container(
@@ -123,10 +172,7 @@ class BankAccountsSummary extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text(
-            'Total Balance:',
-            style: semibold16Black33,
-          ),
+          const Text('Total Balance:', style: semibold16Black33),
           Text(
             BankAccountsService.formatBalance(BankAccountsService.getTotalBalance()),
             style: bold18Primary,
@@ -146,10 +192,7 @@ class BankAccountsSummary extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Text(
-            'Total Loan Amount:',
-            style: semibold16Black33,
-          ),
+          const Text('Total Loan Amount:', style: semibold16Black33),
           Text(
             BankAccountsService.formatBalance(BankAccountsService.getTotalLoanAmount()),
             style: bold18Primary,
@@ -186,10 +229,7 @@ class BankAccountsSummary extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  account['accountId'] ?? 'N/A',
-                  style: bold15Black33,
-                ),
+                Text(account['accountId'] ?? 'N/A', style: bold15Black33),
                 Text(
                   isSavings
                       ? '${BankAccountsService.formatAccountType(account['accountType'])}: ${BankAccountsService.formatBalance(account['balance'])}'
@@ -222,38 +262,34 @@ class BankAccountsSummary extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF4CAF50).withOpacity(0.1),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: const Color(0xFF4CAF50),
-          width: 1,
-        ),
+        border: Border.all(color: const Color(0xFF4CAF50), width: 1),
       ),
       child: Row(
         children: [
-          const Icon(
-            Icons.account_balance_wallet,
-            color: Color(0xFF4CAF50),
-            size: 20,
-          ),
+          const Icon(Icons.account_balance_wallet, color: Color(0xFF4CAF50), size: 20),
           widthSpace,
           const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'WLT001',
-                  style: bold15Black33,
-                ),
-                Text(
-                  'Digital Wallet - UPI Wallet',
-                  style: semibold14Grey94,
-                ),
+                Text('WLT001', style: bold15Black33),
+                Text('Digital Wallet - UPI Wallet', style: semibold14Grey94),
               ],
             ),
           ),
-          const Text(
-            '₹2,500.00',
-            style: bold16Primary,
-          ),
+          _walletLoading
+              ? const SizedBox(
+                  height: 16,
+                  width: 16,
+                  child: CircularProgressIndicator(
+                    color: Color(0xFF4CAF50),
+                    strokeWidth: 2,
+                  ),
+                )
+              : Text(
+                  '₹${_walletBalance.toStringAsFixed(2)}',
+                  style: bold16Primary,
+                ),
         ],
       ),
     );
@@ -268,16 +304,9 @@ class BankAccountsSummary extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(
-            Icons.info_outline,
-            color: Colors.grey,
-            size: 20,
-          ),
+          const Icon(Icons.info_outline, color: Colors.grey, size: 20),
           widthSpace,
-          Text(
-            message,
-            style: semibold14Grey94,
-          ),
+          Text(message, style: semibold14Grey94),
         ],
       ),
     );
