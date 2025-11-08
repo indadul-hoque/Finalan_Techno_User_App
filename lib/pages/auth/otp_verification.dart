@@ -78,7 +78,7 @@ class _OtpVerificationState extends State<OtpVerification> {
     setState(() => _isLoading = true);
 
     final url = Uri.parse(
-        'https://finalan-techno-api-879235286268.asia-south1.run.app/verify/$_phoneNumber/otp/$otp');
+        'https://gs3-itax-user-app-backend-879235286268.asia-south1.run.app/verify/$_phoneNumber/otp/$otp');
 
     try {
       final response = await http.get(url);
@@ -150,7 +150,7 @@ class _OtpVerificationState extends State<OtpVerification> {
     });
 
     final url = Uri.parse(
-        'https://finalan-techno-api-879235286268.asia-south1.run.app/login'); // Same endpoint as login for OTP send
+        'https://gs3-itax-user-app-backend-879235286268.asia-south1.run.app/login'); // Same endpoint as login for OTP send
 
     try {
       final response = await http.post(

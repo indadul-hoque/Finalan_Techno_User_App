@@ -45,7 +45,7 @@ class _LoginScreenState extends State<LoginScreen> {
     _isLoading = true;
   });
 
-  final url = Uri.parse('https://finalan-techno-api-879235286268.asia-south1.run.app/login');
+  final url = Uri.parse('https://gs3-itax-user-app-backend-879235286268.asia-south1.run.app/login');
 
   try {
     final response = await http.post(
